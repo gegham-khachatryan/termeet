@@ -1,0 +1,149 @@
+# Same flow as multiplayer-debugger-javascript/.github/workflows/publish-packages.yml:
+# lint → version bump (from tag) → build all CLI targets on Ubuntu → publish npm packages.
+
+name: Publish Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (without v prefix, e.g. 1.2.3)"
+        required: true
+
+env:
+  BUN_VERSION: latest
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+
+  version:
+    name: Version
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
+
+      - id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set package version and optionalDependencies
+        run: |
+          bun -e "
+            const fs = require('fs');
+            const v = '${{ steps.get_version.outputs.version }}';
+            const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+            p.version = v;
+            for (const k of Object.keys(p.optionalDependencies || {})) {
+              if (k.startsWith('termeet-cli-')) p.optionalDependencies[k] = v;
+            }
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+
+      - name: Update lockfile
+        run: bun install --no-frozen-lockfile
+
+      - name: Commit version bump
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: version bump ${{ steps.get_version.outputs.version }} [skip ci]"
+          SOURCE_BRANCH=$(git branch -r --contains ${{ github.sha }} | grep -v 'HEAD' | head -1 | sed 's/.*origin\///' | xargs)
+          if [ -n "$SOURCE_BRANCH" ]; then
+            git push origin HEAD:refs/heads/$SOURCE_BRANCH
+          else
+            git push origin HEAD:refs/heads/main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+  build-cli:
+    name: Build CLI
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build all platform binaries
+        run: bun run build:cli:all
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-binaries
+          path: dist/
+          retention-days: 1
+
+  publish:
+    name: Publish
+    needs: [version, build-cli]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: bun install --frozen-lockfile
+
+      - name: Download CLI binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-binaries
+          path: dist
+
+      - name: Publish platform packages + wrapper
+        run: bun run publish:cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"

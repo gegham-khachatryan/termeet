@@ -1,0 +1,55 @@
+{
+  "name": "termeet",
+  "version": "0.1.0",
+  "description": "Meet for the terminal — video conferencing with ASCII art",
+  "module": "src/index.tsx",
+  "type": "module",
+  "private": false,
+  "bin": {
+    "termeet": "./bin/termeet.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "optionalDependencies": {
+    "termeet-cli-darwin-arm64": "0.1.0",
+    "termeet-cli-darwin-x64": "0.1.0",
+    "termeet-cli-linux-arm64": "0.1.0",
+    "termeet-cli-linux-x64": "0.1.0",
+    "termeet-cli-windows-arm64": "0.1.0",
+    "termeet-cli-windows-x64": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gegham/termeet.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "dev": "bun run src/index.tsx",
+    "server": "bun run src/server/index.ts",
+    "start": "bun run server & sleep 1 && bun run dev",
+    "build:cli": "bun run scripts/cli-build.ts --single",
+    "build:cli:all": "bun run scripts/cli-build.ts",
+    "publish:cli": "bun run scripts/cli-publish.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/uuid": "^11.0.0",
+    "@types/ws": "^8.18.1",
+    "ffmpeg-static": "^5.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.97",
+    "@opentui/react": "^0.1.97",
+    "chalk": "^5.6.2",
+    "nanoid": "^5.1.7",
+    "react": "^19.2.4",
+    "uuid": "^13.0.0",
+    "ws": "^8.20.0"
+  }
+}

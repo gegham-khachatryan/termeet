@@ -1,0 +1,65 @@
+import { createCliRenderer } from "@opentui/core"
+import { createRoot } from "@opentui/react"
+import { App } from "./app.tsx"
+import { DEFAULT_SERVER_PORT, DEFAULT_SERVER_HOST } from "./protocol.ts"
+
+// ─── CLI Argument Parsing ────────────────────────────────────────────────────
+
+function printHelp() {
+  console.log(`
+  ╔╦╗╔═╗╦═╗╔╦╗╔═╗╔═╗╔╦╗
+   ║ ║╣ ╠╦╝║║║║╣ ║╣  ║
+   ╩ ╚═╝╩╚═╩ ╩╚═╝╚═╝ ╩
+
+  Video conferencing in your terminal
+
+  Usage:
+    termeet                    Launch the client (connects to a signaling server)
+    termeet --help             Show this help message
+
+  Environment Variables:
+    TERMEET_HOST               Signaling server host (default: ${DEFAULT_SERVER_HOST})
+    TERMEET_PORT               Signaling server WebSocket port (default: ${DEFAULT_SERVER_PORT})
+    FFMPEG_PATH / FFPLAY_PATH  Override bundled or PATH binaries (optional)
+
+  In-Meeting Controls:
+    [M]       Toggle microphone mute
+    [V]       Toggle camera on/off
+    [T]       Toggle chat panel
+    [I]       Copy room ID to clipboard
+    [Tab]     Focus chat input
+    [Esc]     Unfocus chat / go back
+    [Q]       Leave meeting · Ctrl+Q quit app
+
+  Requirements:
+    - A reachable Termeet signaling server (you run it on a host; this binary is client-only)
+    - ffmpeg (bundled in npm release, or install for dev from source)
+`)
+  process.exit(0)
+}
+
+async function main() {
+  const args = process.argv.slice(2)
+
+  if (args.includes("--help") || args.includes("-h")) {
+    printHelp()
+  }
+
+  if (args[0] === "server") {
+    console.error(
+      "This build is client-only. Run the signaling server from the repo: bun run server\n" +
+        "(or use your deployed host; set TERMEET_HOST / TERMEET_PORT on the client.)",
+    )
+    process.exit(1)
+  }
+
+  // Default: Launch client UI
+  const renderer = await createCliRenderer()
+  const root = createRoot(renderer)
+  root.render(<App />)
+}
+
+main().catch((err) => {
+  console.error("Failed to start Termeet:", err)
+  process.exit(1)
+})
