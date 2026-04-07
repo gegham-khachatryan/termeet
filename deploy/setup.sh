@@ -26,14 +26,22 @@ apt-get install -y -qq curl unzip git ffmpeg ufw > /dev/null
 if ! command -v bun &> /dev/null; then
   echo "→ Installing Bun..."
   curl -fsSL https://bun.sh/install | bash
-  export BUN_INSTALL="$HOME/.bun"
+  export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
   export PATH="$BUN_INSTALL/bin:$PATH"
-
-  # Add to profile for persistence
   echo 'export BUN_INSTALL="$HOME/.bun"' >> ~/.bashrc
   echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> ~/.bashrc
 else
   echo "→ Bun already installed: $(bun --version)"
+fi
+
+# Systemd runs as user `termeet`, which cannot execute binaries under /root — use a global path.
+if [[ ! -x /usr/local/bin/bun ]]; then
+  if [[ -x "${BUN_INSTALL:-$HOME/.bun}/bin/bun" ]]; then
+    install -m 755 "${BUN_INSTALL:-$HOME/.bun}/bin/bun" /usr/local/bin/bun
+  elif command -v bun &>/dev/null; then
+    install -m 755 "$(command -v bun)" /usr/local/bin/bun
+  fi
+  echo "→ bun available at /usr/local/bin/bun (for termeet service user)"
 fi
 
 # ─── 3. Create termeet user ─────────────────────────────────────────────────
@@ -77,13 +85,17 @@ Type=simple
 User=termeet
 Group=termeet
 WorkingDirectory=/opt/termeet
-ExecStart=/root/.bun/bin/bun run server
+# Inline env so a minimal unit edit fixes ProtectHome=true (hides /home/termeet) without relying on extra Environment= lines.
+ExecStart=/usr/bin/env HOME=/opt/termeet XDG_CACHE_HOME=/opt/termeet/.cache /usr/local/bin/bun run server
 Restart=always
 RestartSec=5
 
-# Environment
+# Environment — HOME must live under ReadWritePaths; ProtectHome=true hides /home/termeet
+# and Bun will fail fast if it cannot use a writable home/cache.
 Environment=NODE_ENV=production
 Environment=TERMEET_PORT=3483
+Environment=HOME=/opt/termeet
+Environment=XDG_CACHE_HOME=/opt/termeet/.cache
 
 # Security hardening
 NoNewPrivileges=true

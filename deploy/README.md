@@ -135,7 +135,9 @@ ufw status
 journalctl -u termeet -n 50 --no-pager
 ```
 
-Common issues: Bun not found in `ExecStart` PATH for the `termeet` user, or port already in use.
+Common issues: **`ExecStart` must use `/usr/local/bin/bun`** (the `termeet` user cannot run `/root/.bun/bin/bun`). **Port 3483 in use** — logs show `EADDRINUSE`; free the port or set `TERMEET_PORT`. **`ProtectHome=true` + default `$HOME`** — Bun needs a writable home; the unit should set `HOME=/opt/termeet` (see `deploy/setup.sh`).
+
+**`Cannot find package 'nanoid'` (or any dependency):** `node_modules` is missing or stale. On the server run `cd /opt/termeet && bun install --production --omit=optional --frozen-lockfile && chown -R termeet:termeet /opt/termeet`, then `systemctl restart termeet`. Prefer `bash deploy/deploy.sh …` from your laptop so the lockfile and `package.json` stay in sync.
 
 **Users see "Connecting..." but can't join rooms:**
 

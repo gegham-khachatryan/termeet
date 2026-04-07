@@ -1,0 +1,34 @@
+# Root package publishes only `bin/` via package.json "files".
+# This list still blocks accidental inclusion if `files` is ever broadened.
+
+# Source & app (client ships as compiled optional packages, not TS here)
+src/
+
+# Build / release tooling
+scripts/
+deploy/
+
+# CI & editor
+.github/
+.cursor/
+
+# Artifacts & deps
+dist/
+node_modules/
+coverage/
+
+# TypeScript / Bun project files
+tsconfig.json
+bun.lock
+bunfig.toml
+*.ts
+*.tsx
+
+# Env & logs
+.env
+.env.*
+*.log
+
+# Misc (README/LICENSE still included by npm by default)
+.DS_Store
+CLAUDE.md

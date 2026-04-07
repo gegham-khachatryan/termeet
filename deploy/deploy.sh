@@ -42,7 +42,9 @@ ssh $SSH_OPTS "root@${HOST}" << 'REMOTE'
   export BUN_INSTALL="$HOME/.bun"
   export PATH="$BUN_INSTALL/bin:$PATH"
   cd /opt/termeet
-  bun install --production
+  # --omit=optional: termeet-cli-* optional deps are for npm installs and may 404 until published.
+  # --frozen-lockfile: same dependency tree as bun.lock (avoids half-empty node_modules).
+  bun install --production --omit=optional --frozen-lockfile
   chown -R termeet:termeet /opt/termeet
 REMOTE
 

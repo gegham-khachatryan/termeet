@@ -44,8 +44,12 @@ Termeet is a real-time video conferencing CLI app that renders camera feeds as A
 
 ## Prerequisites
 
+**From this repo (development):**
+
 - [Bun](https://bun.sh) (v1.0+)
-- [ffmpeg](https://ffmpeg.org) (for camera and audio)
+- [ffmpeg](https://ffmpeg.org) (and **ffplay** if you want to hear remote audio — often the same package as ffmpeg)
+
+**`npm install -g termeet`:** no Bun; ffmpeg is bundled next to the binary (optional **ffplay** for playback — install ffmpeg fully or copy `ffplay` beside `termeet`).
 
 ```bash
 # Install Bun
@@ -92,7 +96,7 @@ npm install -g termeet
 termeet --help
 ```
 
-Set `repository.url` in `package.json` to your real GitHub remote (needed for provenance). Add **`NPM_TOKEN`** to repo secrets, then push a tag `v1.2.3` or run **Publish Packages** manually from the Actions tab (see `.github/workflows/publish-packages.yml`).
+Ensure `package.json` → `repository.url` matches this GitHub repo (needed for **provenance** on publish). Add a repo secret **`NPM_TOKEN`** (npm publish token). Trigger **Publish Packages** by pushing a tag `v1.2.3` or via **Actions → Publish Packages → Run workflow** (see `.github/workflows/publish-packages.yml`).
 
 ### Maintainer builds
 
@@ -128,36 +132,38 @@ bun run dev
 TERMEET_HOST=192.168.1.100 TERMEET_PORT=3483 bun run dev
 ```
 
-### In-Meeting Controls
+### Controls
 
-| Key   | Action             |
-| ----- | ------------------ |
-| `M`   | Toggle mute        |
-| `V`   | Toggle camera      |
-| `T`   | Toggle chat panel  |
-| `I`   | Copy room ID to clipboard (or click **Room** in the bar) |
-| `Tab` | Focus/unfocus chat |
-| `Esc` | Unfocus / go back  |
-| `Q`   | Leave meeting      |
+| Key        | Action |
+| ---------- | ------ |
+| `M`        | Toggle microphone mute |
+| `V`        | Toggle camera |
+| `T`        | Toggle chat panel |
+| `I`        | Copy room ID (or use **Room** in the bar) |
+| `Tab`      | Focus chat / cycle fields (lobby create & join forms) |
+| `Esc`      | Lobby: quit on main menu, else back to menu · Meeting: unfocus chat |
+| `Q`        | Lobby: quit · Meeting: leave room |
+| `Ctrl+Q`   | Meeting only: quit app |
+| `P`        | Meeting: clear pinned participant |
 
 ## How It Works
 
-1. **Camera Capture**: ffmpeg captures raw RGB frames from your camera
-2. **ASCII Rendering**: Each frame is processed using a p5.js-inspired pipeline:
-   - Pixel brightness calculation (luminance formula)
-   - Contrast and brightness adjustments
-   - Optional Sobel edge detection
-   - Brightness-to-ASCII character mapping using a 68-character ramp
-3. **Streaming**: ASCII frames are sent as lightweight text over WebSocket
-4. **Display**: OpenTUI renders the ASCII art in a responsive grid layout
+1. **Camera Capture**: ffmpeg captures raw RGB frames from your camera (or a test pattern if capture fails).
+2. **ASCII Rendering**: Each frame is processed with a p5.js–style pipeline (luminance, contrast/brightness, optional **Sobel** edges — the engine supports edges; the default app config keeps them off).
+3. **Video over WebSocket**: Downsampled **raw RGB (base64)** is sent to peers; each client runs its own ASCII renderer for its terminal size. (So the wire format is pixels, not pre-rendered ASCII text.)
+4. **Audio**: PCM chunks (base64) over the same WebSocket; ffmpeg/ffplay for capture and playback where available.
+5. **Display**: OpenTUI lays out lobby, grid, chat, and controls.
 
 ## Project Structure
 
 ```
 src/
-├── index.tsx              # CLI entry point with arg parsing
+├── index.tsx              # Client CLI entry (connects to signaling server)
 ├── app.tsx                # Main App component (state management)
 ├── protocol.ts            # Shared types and message definitions
+├── lib/
+│   ├── media-binaries.ts  # Resolve bundled ffmpeg/ffplay next to executable
+│   └── clipboard.ts       # Room ID copy helper
 ├── ui/
 │   ├── lobby.tsx          # Create/join room screen
 │   ├── meeting-room.tsx   # Main meeting view with video grid

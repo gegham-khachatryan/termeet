@@ -36,11 +36,12 @@ try {
   const code = err && typeof err === "object" && "code" in err ? (err as { code?: string }).code : ""
   if (code === "EADDRINUSE") {
     console.error(`Port ${port} is already in use (another Termeet server or app may be running).`)
-    console.error(`  See what’s listening:  lsof -iTCP:${port} -sTCP:LISTEN`)
-    console.error(`  Stop that process, or use:  TERMEET_PORT=3484 bun run server`)
+    console.error(`  See what’s listening:  ss -tlnp | grep ${port}   or   lsof -iTCP:${port} -sTCP:LISTEN`)
+    console.error(`  Stop that process, or set TERMEET_PORT in the systemd unit.`)
     process.exit(1)
   }
-  throw err
+  console.error("Termeet server failed to start:", err)
+  process.exit(1)
 }
 
 console.log(`🖥  Termeet server running on ws://localhost:${server.port}`)
