@@ -1,4 +1,4 @@
-<div align="center">
+
 
 ```
  ████████╗███████╗██████╗ ███╗   ███╗███████╗███████╗████████╗
@@ -9,18 +9,20 @@
     ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝   ╚═╝
 ```
 
-**Video conferencing that lives where you live — the terminal.**
+**Meetings, but make them monospace.**
 
-[![npm](https://img.shields.io/npm/v/termeet)](https://www.npmjs.com/package/termeet)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[npm](https://www.npmjs.com/package/termeet)
+[License: MIT](LICENSE)
 
-Your face → pixels → ASCII → WebSocket → their terminal. No browser. No Electron. Just characters.
-
-`npm install -g termeet`
+**Web → [termeet.app](https://termeet.app)**
 
 ---
 
-</div>
+
+
+Someone decided video calls needed more **grit** and fewer tabs. Termeet is what fell out: your camera becomes a living mosaic of `@` and `#`, your voice still gets through, and the whole thing runs where serious tools belong — **the terminal** (or the browser, if you prefer pixels with a glow-up).
+
+No slick UI chrome. No “you’re on mute” in corporate pastel. Just you, your peers, and a grid of tiny ASCII faces trying their best.
 
 ```
   ┌──────────────────────────────────────────────────────┐
@@ -35,171 +37,60 @@ Your face → pixels → ASCII → WebSocket → their terminal. No browser. No 
   └──────────────────────────────────────────────────────┘
 ```
 
-Termeet is a real-time video conferencing app that turns your camera into live ASCII art — right in the terminal. Built with [OpenTUI](https://opentui.com), powered by [Bun](https://bun.sh), and stitched together with ffmpeg and WebSockets. No browser required.
+## The pitch
 
-## Features
+- **See each other** — as ASCII, in real time. It’s surprisingly expressive.
+- **Hear each other** — when ffmpeg and your OS agree; bring **ffplay** if you want sound out of the speakers.
+- **Talk in text** — side chat for links, jokes, and “can you hear me?” without the ritual.
+- **Rooms with codes** — spin up a space, share the id, disappear when you’re done.
 
-- **ASCII Video** — Camera streams rendered as real-time ASCII art
-- **Multi-participant** — Grid layout adapts to number of participants
-- **Live Chat** — In-meeting text chat with timestamps
-- **Audio Streaming** — Microphone capture and playback via ffmpeg
-- **Room Management** — Create or join rooms with shareable room IDs
-- **Controls** — Mute/unmute, camera toggle, chat toggle
-- **Test Pattern** — Animated gradient pattern when no camera is available
+There’s also a **web client** at **[termeet.app](https://termeet.app)** — same rooms, same vibe, friendlier for guests who don’t live in `tmux`. Room links look like `https://termeet.app/r/<room-id>` so you can reload or share a meeting.
 
-**Tech Stack:**
-
-- **Runtime**: [Bun](https://bun.sh)
-- **Terminal UI**: [@opentui/react](https://opentui.com) (Zig-powered, React renderer)
-- **Camera/Audio**: ffmpeg subprocess (cross-platform)
-- **ASCII Rendering**: p5.js-inspired brightness mapping with edge detection
-- **Networking**: WebSocket with JSON protocol
-- **Server**: Bun built-in HTTP/WebSocket server
-
-## Prerequisites
-
-**From this repo (development):**
-
-- [Bun](https://bun.sh) (v1.0+)
-- [ffmpeg](https://ffmpeg.org) (and **ffplay** if you want to hear remote audio — often the same package as ffmpeg)
-
-**`npm install -g termeet`:** no Bun; ffmpeg is bundled next to the binary (optional **ffplay** for playback — install ffmpeg fully or copy `ffplay` beside `termeet`).
-
-```bash
-# Install Bun
-curl -fsSL https://bun.sh/install | bash
-
-# Install ffmpeg (macOS)
-brew install ffmpeg
-
-# Install ffmpeg (Ubuntu/Debian)
-sudo apt install ffmpeg
-```
-
-On **macOS**, grant **Camera** and **Microphone** to your terminal (Terminal.app, iTerm, etc.) under **System Settings → Privacy & Security**, or capture will stay on “No signal”.
-
-## Quick Start
-
-```bash
-# Install dependencies
-bun install
-
-# Terminal 1: Start the server
-bun run server
-
-# Terminal 2: Start the client
-bun run dev
-```
-
-Or run both together:
-
-```bash
-bun run start
-```
-
-## Standalone CLI (no Bun or ffmpeg in PATH)
-
-### npm (same pattern as multiplayer-debugger)
-
-The published **`termeet` command is client-only** — by default it uses **`wss://termeet.app/ws`** (same as the web UI). Override with `TERMEET_WS_URL`, or `TERMEET_HOST` / `TERMEET_PORT` for a local or raw `ws://` server. Host the signaling server separately (`bun run server` from this repo on a VPS, etc.).
-
-A small **Node wrapper** (`bin/termeet.js`) plus **optional** packages `termeet-cli-<platform>-<arch>` that ship the compiled Bun binary and bundled ffmpeg.
+## Jump in (CLI)
 
 ```bash
 npm install -g termeet
-termeet --help
+termeet
 ```
 
-Ensure `package.json` → `repository.url` matches this GitHub repo (needed for **provenance** on publish). Add a repo secret **`NPM_TOKEN`** (npm publish token). Trigger **Publish Packages** by pushing a tag `v1.2.3` or via **Actions → Publish Packages → Run workflow** (see `.github/workflows/publish-packages.yml`).
+By default the CLI talks to the shared signal behind **[termeet.app](https://termeet.app)** (`wss://termeet.app/ws`). Self-hosting? Point the client at your own server with `TERMEET_WS_URL`, or `TERMEET_HOST` / `TERMEET_PORT` for a plain `ws://` box on your network.
 
-### Maintainer builds
+The published npm package ships a **standalone binary** (Bun + bundled ffmpeg where we can). Optional **ffplay** is on you if your OS doesn’t bundle it — full ffmpeg installs usually include it.
+
+## Hack on this repo
+
+Grab **[Bun](https://bun.sh)** (one-liner on their site), **[ffmpeg](https://ffmpeg.org)** from your package manager, and optionally **ffplay** if you care about hearing remote audio.
 
 ```bash
 bun install
-bun run build:cli       # this machine only (+ ffplay if on PATH)
-bun run build:cli:all   # all platforms (CI)
+bun run start    # server + terminal client, together
+# or: bun run server   and   bun run dev   in two terminals
 ```
 
-Each `dist/<platform-arch>/bin/` contains `termeet`, downloaded `ffmpeg` (see [eugeneware/ffmpeg-static](https://github.com/eugeneware/ffmpeg-static)), and optionally `ffplay`. You can zip a single `dist/<slug>/` folder for sidecar distribution.
+**macOS:** give your terminal app **Camera** and **Microphone** in *System Settings → Privacy & Security*, or you’ll stare at “No signal” forever.
 
-Use `FFMPEG_PATH`, `FFPLAY_PATH`, or `TERMEET_BIN_PATH` when needed.
+## Keys (terminal client)
 
-## Usage
 
-### Server
+| Key      | What it does                         |
+| -------- | ------------------------------------ |
+| `M`      | Mute / unmute                        |
+| `V`      | Camera on / off                      |
+| `T`      | Chat panel                           |
+| `I`      | Copy room id                         |
+| `Tab`    | Hop between fields (lobby)           |
+| `Esc`    | Back out / unfocus chat              |
+| `Q`      | Leave room (meeting) or quit (lobby) |
+| `Ctrl+Q` | Quit the app from a meeting          |
+| `P`      | Clear pinned participant             |
 
-```bash
-# Start with default port (3483)
-bun run server
 
-# Custom port
-TERMEET_PORT=8080 bun run server
-```
+## Under the hood (short version)
 
-### Client
+Camera frames take a scenic route through ffmpeg, get turned into something your font can love, and ride **WebSockets** to everyone else. Audio tags along as PCM when the stars align. The terminal UI is **[OpenTUI](https://opentui.com)** — React in the place you’d least expect.
 
-```bash
-# Connect to local server
-bun run dev
-
-# Remote server (raw ws:// — e.g. LAN or open port 3483)
-TERMEET_HOST=192.168.1.100 TERMEET_PORT=3483 bun run dev
-
-# Custom WebSocket URL
-TERMEET_WS_URL=wss://example.com/ws bun run dev
-```
-
-### Controls
-
-| Key      | Action                                                              |
-| -------- | ------------------------------------------------------------------- |
-| `M`      | Toggle microphone mute                                              |
-| `V`      | Toggle camera                                                       |
-| `T`      | Toggle chat panel                                                   |
-| `I`      | Copy room ID (or use **Room** in the bar)                           |
-| `Tab`    | Focus chat / cycle fields (lobby create & join forms)               |
-| `Esc`    | Lobby: quit on main menu, else back to menu · Meeting: unfocus chat |
-| `Q`      | Lobby: quit · Meeting: leave room                                   |
-| `Ctrl+Q` | Meeting only: quit app                                              |
-| `P`      | Meeting: clear pinned participant                                   |
-
-## How It Works
-
-1. **Camera Capture**: ffmpeg captures raw RGB frames from your camera (or a test pattern if capture fails).
-2. **ASCII Rendering**: Each frame is processed with a p5.js–style pipeline (luminance, contrast/brightness, optional **Sobel** edges — the engine supports edges; the default app config keeps them off).
-3. **Video over WebSocket**: Downsampled **raw RGB (base64)** is sent to peers; each client runs its own ASCII renderer for its terminal size. (So the wire format is pixels, not pre-rendered ASCII text.)
-4. **Audio**: PCM chunks (base64) over the same WebSocket; ffmpeg/ffplay for capture and playback where available.
-5. **Display**: OpenTUI lays out lobby, grid, chat, and controls.
-
-## Project Structure
-
-```
-src/
-├── index.tsx              # Client CLI entry (connects to signaling server)
-├── app.tsx                # Main App component (state management)
-├── protocol.ts            # Shared types and message definitions
-├── lib/
-│   ├── media-binaries.ts  # Resolve bundled ffmpeg/ffplay next to executable
-│   └── clipboard.ts       # Room ID copy helper
-├── ui/
-│   ├── lobby.tsx          # Create/join room screen
-│   ├── meeting-room.tsx   # Main meeting view with video grid
-│   ├── video-panel.tsx    # Individual ASCII video panel
-│   ├── chat-panel.tsx     # Chat sidebar with message input
-│   ├── controls-bar.tsx   # Bottom controls bar
-│   └── participants-bar.tsx # Participant status bar
-├── media/
-│   ├── camera.ts          # Camera capture via ffmpeg
-│   ├── ascii-renderer.ts  # Frame-to-ASCII conversion engine
-│   └── audio.ts           # Audio capture and playback
-├── network/
-│   └── client.ts          # WebSocket client with event system
-└── server/
-    ├── index.ts           # Server entry point
-    ├── room-manager.ts    # Room lifecycle and participant tracking
-    └── ws-handler.ts      # WebSocket message handling and broadcast
-```
+If you’re packaging, publishing, or building the CLI for every platform, see `**bun run build:cli`** / `**build:cli:all**`, env vars like `FFMPEG_PATH`, and the workflow in `**.github/workflows/publish-packages.yml**`. The rest is ordinary TypeScript under `src/` — server, client, and shared protocol living in one tree.
 
 ## License
 
-MIT
+MIT — use it, break it, fork it, turn your standup into ASCII theatre.

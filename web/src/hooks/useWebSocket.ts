@@ -5,6 +5,7 @@ export type ConnectionState = "disconnected" | "connecting" | "connected"
 
 export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
   const [connState, setConnState] = useState<ConnectionState>("disconnected")
+  const [connectEpoch, setConnectEpoch] = useState(0)
   const wsRef = useRef<WebSocket | null>(null)
   const onMessageRef = useRef(onMessage)
   onMessageRef.current = onMessage
@@ -21,7 +22,10 @@ export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
 
       setConnState("connecting")
 
-      ws.onopen = () => setConnState("connected")
+      ws.onopen = () => {
+        setConnState("connected")
+        setConnectEpoch((n) => n + 1)
+      }
 
       ws.onmessage = (e) => {
         try {
@@ -62,5 +66,5 @@ export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
     }
   }, [])
 
-  return { connState, send }
+  return { connState, connectEpoch, send }
 }

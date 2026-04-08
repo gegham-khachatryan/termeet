@@ -75,4 +75,4 @@ export const ASCII_RAMP_DETAILED = ' .\'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXY
 
 // Unicode block/shade ramp for deeper, richer visualization
 // export const ASCII_RAMP_BLOCKS = ' ·∙:░▒▓█'
-export const ASCII_RAMP_BLOCKS = '▓▓▓▓████'
+export const ASCII_RAMP_BLOCKS = '████████'

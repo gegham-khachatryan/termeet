@@ -74,6 +74,31 @@ body,
   background: var(--panel-inner);
 }
 
+.rejoin-card {
+  text-align: center;
+}
+
+.rejoin-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.rejoin-room-id {
+  margin: 0 0 16px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--cyan-bright);
+  word-break: break-all;
+}
+
+.rejoin-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dim);
+}
+
 .logo {
   color: var(--cyan);
   font-size: 15px;

@@ -1,16 +1,20 @@
-import { nanoid } from "nanoid"
-import type { Room, Participant, ChatMessage } from "../protocol.ts"
+import { nanoid } from 'nanoid'
+import type { Room, Participant } from '../protocol.ts'
+
+/** Keep empty rooms alive this long so a lone user can reload or re-open a shared link. */
+const EMPTY_ROOM_GRACE_MS = 30 * 1000
 
 export class RoomManager {
   private rooms = new Map<string, Room>()
   private participantRooms = new Map<string, string>() // participantId -> roomId
+  private emptyRoomTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   createRoom(name: string): Room {
     const room: Room = {
       id: nanoid(8),
       name,
       createdAt: Date.now(),
-      participants: [],
+      participants: []
     }
     this.rooms.set(room.id, room)
     return room
@@ -24,12 +28,14 @@ export class RoomManager {
     const room = this.rooms.get(roomId)
     if (!room) return null
 
+    this.cancelEmptyRoomDeletion(roomId)
+
     const participant: Participant = {
       id: nanoid(12),
       name: userName,
       isMuted: false,
       isCameraOn: true,
-      joinedAt: Date.now(),
+      joinedAt: Date.now()
     }
 
     room.participants.push(participant)
@@ -50,15 +56,37 @@ export class RoomManager {
     const [participant] = room.participants.splice(idx, 1)
     this.participantRooms.delete(participantId)
 
-    // Clean up empty rooms
     if (room.participants.length === 0) {
-      this.rooms.delete(roomId)
+      this.scheduleEmptyRoomDeletion(roomId)
     }
 
     return { room, participant: participant! }
   }
 
-  updateParticipant(participantId: string, update: Partial<Pick<Participant, "isMuted" | "isCameraOn">>): Participant | null {
+  private cancelEmptyRoomDeletion(roomId: string) {
+    const t = this.emptyRoomTimers.get(roomId)
+    if (t !== undefined) {
+      clearTimeout(t)
+      this.emptyRoomTimers.delete(roomId)
+    }
+  }
+
+  private scheduleEmptyRoomDeletion(roomId: string) {
+    this.cancelEmptyRoomDeletion(roomId)
+    const timer = setTimeout(() => {
+      this.emptyRoomTimers.delete(roomId)
+      const r = this.rooms.get(roomId)
+      if (r && r.participants.length === 0) {
+        this.rooms.delete(roomId)
+      }
+    }, EMPTY_ROOM_GRACE_MS)
+    this.emptyRoomTimers.set(roomId, timer)
+  }
+
+  updateParticipant(
+    participantId: string,
+    update: Partial<Pick<Participant, 'isMuted' | 'isCameraOn'>>
+  ): Participant | null {
     const roomId = this.participantRooms.get(participantId)
     if (!roomId) return null
 
