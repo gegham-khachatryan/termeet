@@ -63,7 +63,7 @@ export type ServerMessage =
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 export const DEFAULT_SERVER_PORT = 3483
-export const DEFAULT_SERVER_HOST = 'localhost'
+export const DEFAULT_SERVER_HOST = 'termeet.app'
 export const FRAME_RATE = 15 // Target FPS for ASCII video
 export const AUDIO_SAMPLE_RATE = 16000
 export const AUDIO_CHANNELS = 1
