@@ -22,7 +22,6 @@ export class TermeetClient {
   private events: TermeetClientEvents
   private wsUrl: string
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private pingInterval: ReturnType<typeof setInterval> | null = null
   private _state: ConnectionState = 'disconnected'
 
   constructor(events: TermeetClientEvents, wsUrl?: string) {
@@ -45,12 +44,6 @@ export class TermeetClient {
     this.ws.onopen = () => {
       this._state = 'connected'
       this.events.onConnectionChange('connected')
-
-      // Keep-alive ping every 30s to prevent idle disconnects
-      this.clearPing()
-      this.pingInterval = setInterval(() => {
-        this.send({ type: 'ping' })
-      }, 30000)
     }
 
     this.ws.onmessage = (event) => {
@@ -65,7 +58,6 @@ export class TermeetClient {
     this.ws.onclose = () => {
       this.ws = null
       this._state = 'disconnected'
-      this.clearPing()
       this.events.onConnectionChange('disconnected')
 
       // Auto-reconnect after 2s
@@ -77,15 +69,7 @@ export class TermeetClient {
     }
   }
 
-  private clearPing(): void {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval)
-      this.pingInterval = null
-    }
-  }
-
   disconnect(): void {
-    this.clearPing()
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
