@@ -51,6 +51,7 @@ export type ClientMessage =
   | { type: "leave-room" }
   | { type: "chat"; content: string }
   | { type: "video-frame"; frame: AsciiFrame }
+  | { type: "audio-data"; data: string; timestamp: number }
   | { type: "toggle-mute"; isMuted: boolean }
   | { type: "toggle-camera"; isCameraOn: boolean }
   | { type: "ping" }

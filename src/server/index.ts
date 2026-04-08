@@ -67,7 +67,7 @@ try {
       message: handleMessage,
       close: handleClose,
       perMessageDeflate: true,
-      maxPayloadLength: 1024 * 1024 // 1MB max for ASCII frames
+      maxPayloadLength: 4 * 1024 * 1024 // 4MB max for video + audio frames
     }
   })
 } catch (err: unknown) {

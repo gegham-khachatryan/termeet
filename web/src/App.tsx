@@ -4,6 +4,7 @@ import type { AsciiVideoDisplay, Room, ServerMessage } from "./types"
 import type { ChatEntry } from "./components/ChatPanel"
 import { useWebSocket } from "./hooks/useWebSocket"
 import { useCamera } from "./hooks/useCamera"
+import { useAudio } from "./hooks/useAudio"
 import { Lobby } from "./components/Lobby"
 import { Meeting } from "./components/Meeting"
 import { fromBase64, isBase64Frame, renderRgbToColoredLines } from "./ascii"
@@ -33,6 +34,7 @@ function AppShell() {
 
   const myIdRef = useRef<string | null>(null)
   const lastRejoinKey = useRef("")
+  const leavingRef = useRef(false)
 
   const addSystem = useCallback((text: string) => {
     setChatMessages((prev) => [...prev, { id: nextChatId(), type: "system", text }])
@@ -144,6 +146,12 @@ function AppShell() {
           break
         }
 
+        case "audio-data":
+          if (msg.senderId !== myIdRef.current) {
+            playAudioRef.current?.(msg.data)
+          }
+          break
+
         case "error":
           setError(msg.message)
           setTimeout(() => setError(null), 4000)
@@ -155,13 +163,19 @@ function AppShell() {
 
   const { connState, connectEpoch, send } = useWebSocket(onMessage)
 
-  const { cameraOn, micOn, localDisplay, startCamera, stopCamera, toggleCamera, toggleMic } =
+  const [micOn, setMicOn] = useState(true)
+
+  const { cameraOn, localDisplay, startCamera, stopCamera, toggleCamera } =
     useCamera(myId, (frame) => {
       send({ type: "video-frame", frame })
     })
 
+  const { playAudio } = useAudio(view === "meeting", micOn, send)
+  const playAudioRef = useRef(playAudio)
+  playAudioRef.current = playAudio
+
   useEffect(() => {
-    if (connState !== "connected" || !roomIdFromRoute || room) return
+    if (connState !== "connected" || !roomIdFromRoute || room || leavingRef.current) return
     const key = `${connectEpoch}:${roomIdFromRoute}`
     if (lastRejoinKey.current === key) return
     lastRejoinKey.current = key
@@ -200,9 +214,12 @@ function AppShell() {
   }, [toggleCamera, send, cameraOn])
 
   const handleToggleMic = useCallback(() => {
-    toggleMic()
-    send({ type: "toggle-mute", isMuted: micOn })
-  }, [toggleMic, send, micOn])
+    setMicOn((prev) => {
+      const next = !prev
+      send({ type: "toggle-mute", isMuted: next })
+      return next
+    })
+  }, [send])
 
   const handleLeave = useCallback(() => {
     send({ type: "leave-room" })

@@ -54,6 +54,13 @@ export class AudioCapture {
     }
 
     this.running = true
+    // Monitor subprocess exit
+    this.process.exited.then(() => {
+      if (this.running) {
+        this.running = false
+        this.process = null
+      }
+    })
     this.readAudio()
   }
 
@@ -102,21 +109,6 @@ export class AudioPlayback {
   async start(): Promise<void> {
     if (this.running) return
 
-    const platform = process.platform
-    let outputFormat: string
-    let outputDevice: string
-
-    if (platform === "darwin") {
-      outputFormat = "coreaudio"
-      outputDevice = "default"
-    } else if (platform === "linux") {
-      outputFormat = "pulse"
-      outputDevice = "default"
-    } else {
-      outputFormat = "dshow"
-      outputDevice = "audio=Speaker"
-    }
-
     const ffplay = resolveFfplayPath()
 
     try {
@@ -127,8 +119,8 @@ export class AudioPlayback {
           "-ar", String(AUDIO_SAMPLE_RATE),
           "-ac", String(AUDIO_CHANNELS),
           "-nodisp",
-          "-autoexit",
           "-v", "quiet",
+          "-infbuf",
           "-i", "pipe:0",
         ],
         stdin: "pipe",
@@ -141,6 +133,13 @@ export class AudioPlayback {
     }
 
     this.running = true
+    // Monitor subprocess — mark stopped if ffplay exits unexpectedly
+    this.process.exited.then(() => {
+      if (this.running) {
+        this.running = false
+        this.process = null
+      }
+    })
   }
 
   write(data: Buffer) {
@@ -149,7 +148,8 @@ export class AudioPlayback {
       const stdin = this.process.stdin as { write(data: Buffer): void }
       stdin.write(data)
     } catch {
-      // Playback error, ignore
+      this.running = false
+      this.process = null
     }
   }
 

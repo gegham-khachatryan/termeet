@@ -17,7 +17,6 @@ export function useCamera(
   onFrame: (frame: AsciiFrame) => void,
 ) {
   const [cameraOn, setCameraOn] = useState(true)
-  const [micOn, setMicOn] = useState(true)
   const [localDisplay, setLocalDisplay] = useState<AsciiVideoDisplay | null>(null)
 
   const streamRef = useRef<MediaStream | null>(null)
@@ -110,12 +109,11 @@ export function useCamera(
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: "user" },
-        audio: true,
+        audio: false,
       })
       streamRef.current = stream
       const video = videoRef.current!
       video.srcObject = stream
-      stream.getAudioTracks().forEach((t) => (t.enabled = micOn))
       try {
         await video.play()
       } catch {
@@ -134,7 +132,7 @@ export function useCamera(
     } catch {
       setLocalDisplay({ type: "plain", text: "Camera unavailable", dim: true })
     }
-  }, [capture, micOn])
+  }, [capture])
 
   const stopCamera = useCallback(() => {
     if (timerRef.current) {
@@ -161,14 +159,6 @@ export function useCamera(
     })
   }, [startCamera, stopCamera])
 
-  const toggleMic = useCallback(() => {
-    setMicOn((prev) => {
-      const next = !prev
-      streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = next))
-      return next
-    })
-  }, [])
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -179,11 +169,9 @@ export function useCamera(
 
   return {
     cameraOn,
-    micOn,
     localDisplay,
     startCamera,
     stopCamera,
     toggleCamera,
-    toggleMic,
   }
 }
