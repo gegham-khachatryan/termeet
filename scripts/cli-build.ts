@@ -160,25 +160,28 @@ function copyFfplayFromPath(binDir: string, win: boolean) {
   }
 }
 
-/** Map build target slug to the @opentui/core platform package name. */
-function opentuiPkgName(npmOs: string, npmCpu: string): string {
-  // @opentui/core uses node-style platform names: darwin, linux, win32
-  return `@opentui/core-${npmOs}-${npmCpu}`
-}
-
-/** Ensure the native @opentui/core-<platform>-<arch> package is present. */
-async function ensureOpentuiPlatformPkg(npmOs: string, npmCpu: string) {
-  const name = opentuiPkgName(npmOs, npmCpu)
-  const pkgDir = join(ROOT, "node_modules", ...name.split("/"))
-  if (existsSync(pkgDir)) return
-  console.log(`  Installing ${name} for cross-compilation…`)
-  await $`${process.execPath} add --no-save ${name}`.cwd(ROOT)
-}
-
 const distRoot = join(ROOT, "dist")
 mkdirSync(distRoot, { recursive: true })
 
 console.log(`Building ${targets.length} target(s)…`)
+
+/**
+ * Cross-compilation resolves `@opentui/core-${process.platform}-${process.arch}` at bundle time.
+ * On Linux CI the host is linux-x64, so a plain `bun install` never extracts darwin/windows
+ * optional packages. Install every platform variant once (same lockfile; no package.json change).
+ */
+if (!single) {
+  console.log(
+    "  bun install --frozen-lockfile --os=* --cpu=* (all OpenTUI native optional packages)…",
+  )
+  const proc = Bun.spawn([process.execPath, "install", "--frozen-lockfile", "--os=*", "--cpu=*"], {
+    cwd: ROOT,
+    stdout: "inherit",
+    stderr: "inherit",
+  })
+  const code = await proc.exited
+  if (code !== 0) process.exit(code)
+}
 
 for (const t of targets) {
   const pkgName = `termeet-cli-${t.slug}`
@@ -187,9 +190,6 @@ for (const t of targets) {
   const binPath = join(binDir, t.bin)
 
   mkdirSync(binDir, { recursive: true })
-
-  // Ensure the target platform's native @opentui/core package is available
-  await ensureOpentuiPlatformPkg(t.npmOs, t.npmCpu)
 
   console.log(`  → ${t.target}`)
   await $`${process.execPath} build ${join(ROOT, "src/index.tsx")} --compile --target=${t.target} --outfile=${binPath} --sourcemap=none`.cwd(

@@ -1,10 +1,11 @@
 // ─── Browser-side ASCII renderer ────────────────────────────────────────────
 // Mirrors src/media/ascii-renderer.ts sampling + true-color glyphs (renderColored).
 
-import type { AsciiColoredLines, AsciiColorRun } from "./types"
+import type { AsciiColoredLines, AsciiColorRun } from './types'
 
 /** Same as protocol ASCII_RAMP_BLOCKS — matches CLI AsciiRenderer in app.tsx */
-const ASCII_RAMP_BLOCKS = " ·∙:░▒▓█"
+// const ASCII_RAMP_BLOCKS = " ·∙:░▒▓█"
+const ASCII_RAMP_BLOCKS = '████████'
 
 /** Defaults match CLI `new AsciiRenderer({ contrast: 0.3, brightness: 0.1, charset: ASCII_RAMP_BLOCKS })` */
 const DEFAULT_CONTRAST = 0.3
@@ -50,7 +51,7 @@ function sampleAsciiCells(
   srcHeight: number,
   cols: number,
   rows: number,
-  options?: AsciiRenderOptions,
+  options?: AsciiRenderOptions
 ): AsciiCell[][] {
   const charset = options?.charset ?? ASCII_RAMP_BLOCKS
   const contrast = options?.contrast ?? DEFAULT_CONTRAST
@@ -122,7 +123,7 @@ export function renderRgbToColoredLines(
   srcHeight: number,
   cols: number,
   rows: number,
-  options?: AsciiRenderOptions,
+  options?: AsciiRenderOptions
 ): AsciiColoredLines {
   const grid = sampleAsciiCells(data, srcWidth, srcHeight, cols, rows, options)
   return grid.map(rowToRuns)
@@ -137,10 +138,10 @@ export function renderRgbToAscii(
   srcHeight: number,
   cols: number,
   rows: number,
-  options?: AsciiRenderOptions,
+  options?: AsciiRenderOptions
 ): string {
   const grid = sampleAsciiCells(data, srcWidth, srcHeight, cols, rows, options)
-  return grid.map((row) => row.map((c) => c.char).join("")).join("\n")
+  return grid.map((row) => row.map((c) => c.char).join('')).join('\n')
 }
 
 /**
@@ -160,7 +161,7 @@ export function rgbaToRgb(rgba: Uint8ClampedArray, width: number, height: number
  * Base64 encode a Uint8Array.
  */
 export function toBase64(data: Uint8Array): string {
-  let binary = ""
+  let binary = ''
   for (let i = 0; i < data.length; i++) {
     binary += String.fromCharCode(data[i])
   }
@@ -184,7 +185,7 @@ export function fromBase64(str: string): Uint8Array {
  * (as sent by the CLI) vs pre-rendered ASCII art.
  */
 export function isBase64Frame(data: string, width: number, height: number): boolean {
-  if (data.includes("\n")) return false
+  if (data.includes('\n')) return false
   const expectedLen = Math.ceil((width * height * 3) / 3) * 4
   return data.length >= expectedLen * 0.8
 }

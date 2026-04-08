@@ -63,7 +63,7 @@ export type ServerMessage =
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 export const DEFAULT_SERVER_PORT = 3483
-export const DEFAULT_SERVER_HOST = 'termeet.app'
+export const DEFAULT_SERVER_HOST = 'localhost'
 export const FRAME_RATE = 15 // Target FPS for ASCII video
 export const AUDIO_SAMPLE_RATE = 16000
 export const AUDIO_CHANNELS = 1
@@ -73,4 +73,5 @@ export const ASCII_RAMP = ' .:-=+*#%@'
 export const ASCII_RAMP_DETAILED = ' .\'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$'
 
 // Unicode block/shade ramp for deeper, richer visualization
-export const ASCII_RAMP_BLOCKS = ' ·∙:░▒▓█'
+// export const ASCII_RAMP_BLOCKS = ' ·∙:░▒▓█'
+export const ASCII_RAMP_BLOCKS = '████████'
