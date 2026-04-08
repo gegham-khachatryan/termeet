@@ -1,8 +1,41 @@
-# Termeet
+<div align="center">
 
-> Google Meet for the terminal — video conferencing with ASCII art
+```
+ ████████╗███████╗██████╗ ███╗   ███╗███████╗███████╗████████╗
+ ╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝╚══██╔══╝
+    ██║   █████╗  ██████╔╝██╔████╔██║█████╗  █████╗     ██║
+    ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ██╔══╝     ██║
+    ██║   ███████╗██║  ██║██║ ╚═╝ ██║███████╗███████╗   ██║
+    ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝   ╚═╝
+```
 
-Termeet is a real-time video conferencing CLI app that renders camera feeds as ASCII art directly in your terminal. Built with [OpenTUI](https://opentui.com) for a rich terminal UI experience.
+**Video conferencing that lives where you live — the terminal.**
+
+[![npm](https://img.shields.io/npm/v/termeet)](https://www.npmjs.com/package/termeet)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Your face → pixels → ASCII → WebSocket → their terminal. No browser. No Electron. Just characters.
+
+`npm install -g termeet`
+
+---
+
+</div>
+
+```
+  ┌──────────────────────────────────────────────────────┐
+  │  @@@@@@@@   %%%%%%%%   ########                      │
+  │  @@    @@   %%    %%   ##    ##   Participants: 3    │
+  │  @ o  o @   % o  o %   # o  o #   Room: a7f3x       │
+  │  @  __  @   %  __  %   #  __  #                      │
+  │  @@@@@@@@   %%%%%%%%   ########   [M]ute  [V]ideo   │
+  │                                   [T]chat [Q]uit    │
+  │  > hey, can everyone see my screen?                  │
+  │  > looks great in ASCII!                             │
+  └──────────────────────────────────────────────────────┘
+```
+
+Termeet is a real-time video conferencing app that turns your camera into live ASCII art — right in the terminal. Built with [OpenTUI](https://opentui.com), powered by [Bun](https://bun.sh), and stitched together with ffmpeg and WebSockets. No browser required.
 
 ## Features
 
@@ -13,25 +46,6 @@ Termeet is a real-time video conferencing CLI app that renders camera feeds as A
 - **Room Management** — Create or join rooms with shareable room IDs
 - **Controls** — Mute/unmute, camera toggle, chat toggle
 - **Test Pattern** — Animated gradient pattern when no camera is available
-
-## Architecture
-
-```
-┌─────────────┐     WebSocket      ┌─────────────────┐
-│  Client CLI  │◄──────────────────►│  Signaling      │
-│  (OpenTUI)   │  ASCII frames,    │  Server (Bun)   │
-│              │  audio, chat,     │                 │
-│  ┌─────────┐ │  signaling        │  ┌───────────┐  │
-│  │ Camera  │ │                   │  │   Room    │  │
-│  │ (ffmpeg)│ │                   │  │  Manager  │  │
-│  └────┬────┘ │                   │  └───────────┘  │
-│       ▼      │                   └─────────────────┘
-│  ┌─────────┐ │
-│  │  ASCII  │ │
-│  │Renderer │ │
-│  └─────────┘ │
-└──────────────┘
-```
 
 **Tech Stack:**
 
@@ -134,17 +148,17 @@ TERMEET_HOST=192.168.1.100 TERMEET_PORT=3483 bun run dev
 
 ### Controls
 
-| Key        | Action |
-| ---------- | ------ |
-| `M`        | Toggle microphone mute |
-| `V`        | Toggle camera |
-| `T`        | Toggle chat panel |
-| `I`        | Copy room ID (or use **Room** in the bar) |
-| `Tab`      | Focus chat / cycle fields (lobby create & join forms) |
-| `Esc`      | Lobby: quit on main menu, else back to menu · Meeting: unfocus chat |
-| `Q`        | Lobby: quit · Meeting: leave room |
-| `Ctrl+Q`   | Meeting only: quit app |
-| `P`        | Meeting: clear pinned participant |
+| Key      | Action                                                              |
+| -------- | ------------------------------------------------------------------- |
+| `M`      | Toggle microphone mute                                              |
+| `V`      | Toggle camera                                                       |
+| `T`      | Toggle chat panel                                                   |
+| `I`      | Copy room ID (or use **Room** in the bar)                           |
+| `Tab`    | Focus chat / cycle fields (lobby create & join forms)               |
+| `Esc`    | Lobby: quit on main menu, else back to menu · Meeting: unfocus chat |
+| `Q`      | Lobby: quit · Meeting: leave room                                   |
+| `Ctrl+Q` | Meeting only: quit app                                              |
+| `P`      | Meeting: clear pinned participant                                   |
 
 ## How It Works
 
