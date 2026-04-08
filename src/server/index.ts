@@ -68,6 +68,8 @@ try {
     close: handleClose,
     perMessageDeflate: true,
     maxPayloadLength: 1024 * 1024, // 1MB max for ASCII frames
+    idleTimeout: 240, // seconds – generous to survive brief idle gaps
+    sendPings: true, // auto-ping idle clients to keep connections alive
   },
   })
 } catch (err: unknown) {

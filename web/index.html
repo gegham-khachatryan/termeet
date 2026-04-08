@@ -8,33 +8,20 @@
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖥</text></svg>"
     />
-    <!-- Google Tag Manager -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7L5E3BZWM7"></script>
     <script>
-      ;(function (w, d, s, l, i) {
-        w[l] = w[l] || []
-        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-        var f = d.getElementsByTagName(s)[0],
-          j = d.createElement(s),
-          dl = l != 'dataLayer' ? '&l=' + l : ''
-        j.async = true
-        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-        f.parentNode.insertBefore(j, f)
-      })(window, document, 'script', 'dataLayer', 'GTM-PK7JVJW5')
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+
+      gtag('config', 'G-7L5E3BZWM7')
     </script>
-    <!-- End Google Tag Manager -->
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript
-      ><iframe
-        src="https://www.googletagmanager.com/ns.html?id=GTM-PK7JVJW5"
-        height="0"
-        width="0"
-        style="display: none; visibility: hidden"
-      ></iframe
-    ></noscript>
-    <!-- End Google Tag Manager (noscript) -->
   </body>
 </html>

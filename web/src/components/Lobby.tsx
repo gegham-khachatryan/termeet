@@ -118,7 +118,7 @@ export function Lobby({ connState, error, onCreateRoom, onJoinRoom }: LobbyProps
         <p className='lobby-cli-copy'>
           Install the CLI, then point it at the signaling server (same host as this page unless you self-host).
         </p>
-        <pre className='lobby-cli-block'>{`npm install -g termeet`}</pre>
+        <pre className='lobby-cli-block'>{`npm install -g termeet \nor \nnpx termeet`}</pre>
       </section>
 
       <p className='lobby-github'>
