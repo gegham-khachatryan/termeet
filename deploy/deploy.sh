@@ -32,13 +32,14 @@ echo "→ Building web frontend..."
 # ─── 2. Sync files ──────────────────────────────────────────────────────────
 
 echo "→ Syncing project files..."
+# /dist anchors to repo root only — do not exclude web/dist (Vite output must reach the server).
 rsync -avz --delete \
   -e "ssh $SSH_OPTS" \
   --exclude node_modules \
   --exclude .git \
   --exclude .env \
   --exclude .DS_Store \
-  --exclude dist \
+  --exclude /dist \
   --exclude web/node_modules \
   --exclude web/src \
   ./ "root@${HOST}:${APP_DIR}/"

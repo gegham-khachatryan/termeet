@@ -101,7 +101,7 @@ bun run start
 
 ### npm (same pattern as multiplayer-debugger)
 
-The published **`termeet` command is client-only** — it connects to your signaling server via `TERMEET_HOST` / `TERMEET_PORT`. Host the WebSocket server separately (`bun run server` from this repo on a VPS, etc.).
+The published **`termeet` command is client-only** — by default it uses **`wss://termeet.app/ws`** (same as the web UI). Override with `TERMEET_WS_URL`, or `TERMEET_HOST` / `TERMEET_PORT` for a local or raw `ws://` server. Host the signaling server separately (`bun run server` from this repo on a VPS, etc.).
 
 A small **Node wrapper** (`bin/termeet.js`) plus **optional** packages `termeet-cli-<platform>-<arch>` that ship the compiled Bun binary and bundled ffmpeg.
 
@@ -142,8 +142,11 @@ TERMEET_PORT=8080 bun run server
 # Connect to local server
 bun run dev
 
-# Connect to remote server
+# Remote server (raw ws:// — e.g. LAN or open port 3483)
 TERMEET_HOST=192.168.1.100 TERMEET_PORT=3483 bun run dev
+
+# Custom WebSocket URL
+TERMEET_WS_URL=wss://example.com/ws bun run dev
 ```
 
 ### Controls

@@ -1,14 +1,7 @@
-import type {
-  ClientMessage,
-  ServerMessage,
-  Room,
-  Participant,
-  ChatMessage,
-  AsciiFrame,
-} from "../protocol.ts"
-import { DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT } from "../protocol.ts"
+import type { ClientMessage, ServerMessage, Room, Participant, ChatMessage, AsciiFrame } from '../protocol.ts'
+import { DEFAULT_CLI_WEBSOCKET_URL } from '../protocol.ts'
 
-export type ConnectionState = "disconnected" | "connecting" | "connected"
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 
 export interface TermeetClientEvents {
   onConnectionChange: (state: ConnectionState) => void
@@ -27,15 +20,13 @@ export interface TermeetClientEvents {
 export class TermeetClient {
   private ws: WebSocket | null = null
   private events: TermeetClientEvents
-  private host: string
-  private port: number
+  private wsUrl: string
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private _state: ConnectionState = "disconnected"
+  private _state: ConnectionState = 'disconnected'
 
-  constructor(events: TermeetClientEvents, host?: string, port?: number) {
+  constructor(events: TermeetClientEvents, wsUrl?: string) {
     this.events = events
-    this.host = host ?? DEFAULT_SERVER_HOST
-    this.port = port ?? DEFAULT_SERVER_PORT
+    this.wsUrl = wsUrl ?? DEFAULT_CLI_WEBSOCKET_URL
   }
 
   get state(): ConnectionState {
@@ -45,15 +36,14 @@ export class TermeetClient {
   connect(): void {
     if (this.ws) return
 
-    this._state = "connecting"
-    this.events.onConnectionChange("connecting")
+    this._state = 'connecting'
+    this.events.onConnectionChange('connecting')
 
-    const url = `ws://${this.host}:${this.port}`
-    this.ws = new WebSocket(url)
+    this.ws = new WebSocket(this.wsUrl)
 
     this.ws.onopen = () => {
-      this._state = "connected"
-      this.events.onConnectionChange("connected")
+      this._state = 'connected'
+      this.events.onConnectionChange('connected')
     }
 
     this.ws.onmessage = (event) => {
@@ -67,8 +57,8 @@ export class TermeetClient {
 
     this.ws.onclose = () => {
       this.ws = null
-      this._state = "disconnected"
-      this.events.onConnectionChange("disconnected")
+      this._state = 'disconnected'
+      this.events.onConnectionChange('disconnected')
 
       // Auto-reconnect after 2s
       this.reconnectTimer = setTimeout(() => this.connect(), 2000)
@@ -86,8 +76,8 @@ export class TermeetClient {
     }
     const ws = this.ws
     this.ws = null
-    this._state = "disconnected"
-    this.events.onConnectionChange("disconnected")
+    this._state = 'disconnected'
+    this.events.onConnectionChange('disconnected')
     if (ws) {
       // Prevent onclose from scheduling reconnect (keeps process alive after quit)
       ws.onclose = () => {}
@@ -105,41 +95,41 @@ export class TermeetClient {
   private ensureConnectedForLobbyAction(): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) return true
     this.events.onError(
-      "Not connected to server. Wait for ● Connected, or check TERMEET_HOST / TERMEET_PORT (host runs the signaling server separately).",
+      'Not connected to server. Wait for ● Connected, or set TERMEET_WS_URL (or TERMEET_HOST / TERMEET_PORT for local ws://).'
     )
     return false
   }
 
   private handleMessage(msg: ServerMessage): void {
     switch (msg.type) {
-      case "room-created":
+      case 'room-created':
         this.events.onRoomCreated(msg.room, msg.participantId)
         break
-      case "room-joined":
+      case 'room-joined':
         this.events.onRoomJoined(msg.room, msg.participantId)
         break
-      case "room-not-found":
+      case 'room-not-found':
         this.events.onRoomNotFound()
         break
-      case "participant-joined":
+      case 'participant-joined':
         this.events.onParticipantJoined(msg.participant)
         break
-      case "participant-left":
+      case 'participant-left':
         this.events.onParticipantLeft(msg.participantId)
         break
-      case "participant-updated":
+      case 'participant-updated':
         this.events.onParticipantUpdated(msg.participant)
         break
-      case "chat-message":
+      case 'chat-message':
         this.events.onChatMessage(msg.message)
         break
-      case "video-frame":
+      case 'video-frame':
         this.events.onVideoFrame(msg.frame)
         break
-      case "audio-data":
+      case 'audio-data':
         this.events.onAudioData(msg.senderId, msg.data, msg.timestamp)
         break
-      case "error":
+      case 'error':
         this.events.onError(msg.message)
         break
     }
@@ -149,35 +139,35 @@ export class TermeetClient {
 
   createRoom(name: string, userName: string): void {
     if (!this.ensureConnectedForLobbyAction()) return
-    this.send({ type: "create-room", name, userName })
+    this.send({ type: 'create-room', name, userName })
   }
 
   joinRoom(roomId: string, userName: string): void {
     if (!this.ensureConnectedForLobbyAction()) return
-    this.send({ type: "join-room", roomId, userName })
+    this.send({ type: 'join-room', roomId, userName })
   }
 
   leaveRoom(): void {
-    this.send({ type: "leave-room" })
+    this.send({ type: 'leave-room' })
   }
 
   sendChat(content: string): void {
-    this.send({ type: "chat", content })
+    this.send({ type: 'chat', content })
   }
 
   sendVideoFrame(frame: AsciiFrame): void {
-    this.send({ type: "video-frame", frame })
+    this.send({ type: 'video-frame', frame })
   }
 
   sendAudioData(data: string, timestamp: number): void {
-    this.send({ type: "audio-data", data, timestamp })
+    this.send({ type: 'audio-data', data, timestamp })
   }
 
   toggleMute(isMuted: boolean): void {
-    this.send({ type: "toggle-mute", isMuted })
+    this.send({ type: 'toggle-mute', isMuted })
   }
 
   toggleCamera(isCameraOn: boolean): void {
-    this.send({ type: "toggle-camera", isCameraOn })
+    this.send({ type: 'toggle-camera', isCameraOn })
   }
 }

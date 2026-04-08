@@ -1,6 +1,6 @@
 # Deploying Termeet to Digital Ocean
 
-This guide covers deploying the **WebSocket signaling server** so clients can connect from their own machines with the Termeet CLI (`bun run dev` or `termeet`), using `TERMEET_HOST` / `TERMEET_PORT` to point at your droplet.
+This guide covers deploying the **WebSocket signaling server** so clients can connect with the Termeet CLI (`bun run dev` or `termeet`). The published CLI defaults to **`wss://termeet.app/ws`**; use `TERMEET_HOST` / `TERMEET_PORT` for a raw `ws://` connection (e.g. droplet IP and open port **3483**), or `TERMEET_WS_URL` for a full URL.
 
 ## Prerequisites
 
@@ -76,9 +76,7 @@ If you have a domain like `termeet.app`:
 2. Add an **A record**: `termeet.app` → `YOUR_DROPLET_IP`
 3. Wait for DNS propagation (usually a few minutes)
 
-```bash
-TERMEET_HOST=termeet.app bun run dev
-```
+With TLS and nginx in front, **`termeet` / `bun run dev` need no env vars** — they already target `wss://termeet.app/ws`. For a quick test against the droplet IP only (bypassing the domain), use `TERMEET_HOST=YOUR_DROPLET_IP TERMEET_PORT=3483 bun run dev` as above.
 
 ## Managing the Service
 

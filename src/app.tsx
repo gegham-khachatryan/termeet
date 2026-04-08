@@ -5,7 +5,7 @@ import type { Room, Participant, ChatMessage, AsciiFrame } from "./protocol.ts"
 import {
   FRAME_RATE,
   ASCII_RAMP_BLOCKS,
-  DEFAULT_SERVER_HOST,
+  DEFAULT_CLI_WEBSOCKET_URL,
   DEFAULT_SERVER_PORT,
 } from "./protocol.ts"
 import { TermeetClient, type ConnectionState } from "./network/client.ts"
@@ -66,8 +66,18 @@ export function App() {
 
   // ─── Initialize client ─────────────────────────────────────────────
   useEffect(() => {
-    const host = process.env["TERMEET_HOST"] ?? DEFAULT_SERVER_HOST
-    const port = Number(process.env["TERMEET_PORT"]) || DEFAULT_SERVER_PORT
+    const wsUrl = (() => {
+      const full = process.env["TERMEET_WS_URL"]
+      if (full) return full
+      const h = process.env["TERMEET_HOST"]
+      const p = process.env["TERMEET_PORT"]
+      if (h !== undefined || p !== undefined) {
+        const host = h ?? "127.0.0.1"
+        const port = p ? Number(p) : DEFAULT_SERVER_PORT
+        return `ws://${host}:${port}`
+      }
+      return DEFAULT_CLI_WEBSOCKET_URL
+    })()
 
     const client = new TermeetClient(
       {
@@ -162,8 +172,7 @@ export function App() {
         },
         onError: (message) => setError(message),
       },
-      host,
-      port,
+      wsUrl,
     )
 
     client.connect()

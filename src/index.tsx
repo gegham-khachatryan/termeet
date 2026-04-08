@@ -1,7 +1,7 @@
 import { createCliRenderer } from "@opentui/core"
 import { createRoot } from "@opentui/react"
 import { App } from "./app.tsx"
-import { DEFAULT_SERVER_PORT, DEFAULT_SERVER_HOST } from "./protocol.ts"
+import { DEFAULT_SERVER_PORT, DEFAULT_CLI_WEBSOCKET_URL } from "./protocol.ts"
 
 // ─── CLI Argument Parsing ────────────────────────────────────────────────────
 
@@ -18,8 +18,8 @@ function printHelp() {
     termeet --help             Show this help message
 
   Environment Variables:
-    TERMEET_HOST               Signaling server host (default: ${DEFAULT_SERVER_HOST})
-    TERMEET_PORT               Signaling server WebSocket port (default: ${DEFAULT_SERVER_PORT})
+    TERMEET_WS_URL             Full WebSocket URL (default: ${DEFAULT_CLI_WEBSOCKET_URL})
+    TERMEET_HOST / TERMEET_PORT  If set, connect to ws://HOST:PORT (local dev; default port ${DEFAULT_SERVER_PORT})
     FFMPEG_PATH / FFPLAY_PATH  Override bundled or PATH binaries (optional)
 
   In-Meeting Controls:
@@ -48,7 +48,7 @@ async function main() {
   if (args[0] === "server") {
     console.error(
       "This build is client-only. Run the signaling server from the repo: bun run server\n" +
-        "(or use your deployed host; set TERMEET_HOST / TERMEET_PORT on the client.)",
+        "(or point the client at your server with TERMEET_WS_URL or TERMEET_HOST / TERMEET_PORT.)",
     )
     process.exit(1)
   }
