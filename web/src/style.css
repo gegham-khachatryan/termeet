@@ -1,0 +1,789 @@
+/* ─── Termeet Web — CLI-aligned terminal theme ───────────────────────────── */
+
+:root {
+  --bg: #0a0c10;
+  --fg: #c8c8c8;
+  --dim: #556677;
+  --dim-dark: #445566;
+  --cyan: #5ce1e6;
+  --cyan-bright: #9ef0f3;
+  --cyan-border: #2a8a9e;
+  --cyan-muted: #3d5268;
+  --green: #3dcc6e;
+  --green-border: #1a8a4a;
+  --red: #ff6666;
+  --red-border: #992222;
+  --yellow: #ffdd88;
+  --yellow-dim: #e0a030;
+  --danger: #e05050;
+  --border: #2a333d;
+  --video-box-border: #3d4f5e;
+  --video-box-border-remote: #4f6372;
+  --input-bg: #0d1118;
+  --panel-inner: #06080c;
+  --accent: var(--cyan);
+  --accent-dim: var(--cyan-border);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  background: #000;
+  color: var(--fg);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Lobby (matches ui/lobby.tsx palette) ─────────────────────────────── */
+
+.lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.lobby-card {
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid var(--cyan-border);
+  border-radius: 6px;
+  padding: 20px 24px 24px;
+  background: var(--panel-inner);
+}
+
+.logo {
+  color: var(--cyan);
+  font-size: 15px;
+  line-height: 1.25;
+  text-align: center;
+  user-select: none;
+  text-shadow: 0 0 12px rgba(92, 225, 230, 0.25);
+}
+
+.tagline {
+  text-align: center;
+  margin: 12px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tagline-lead {
+  color: #f0f0f0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tagline-sub {
+  color: #99aabb;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.lobby-rule {
+  color: var(--dim-dark);
+  font-size: 11px;
+  text-align: center;
+  margin: 4px 0 12px;
+  user-select: none;
+}
+
+.status-line {
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.conn-status.connected {
+  color: var(--cyan-bright);
+}
+
+.conn-status.connecting {
+  color: var(--yellow);
+}
+
+.conn-status.disconnected {
+  color: var(--yellow-dim);
+}
+
+.form-group {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  display: block;
+  color: var(--dim);
+  font-size: 11px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--cyan-muted);
+  border-radius: 4px;
+  padding: 8px 12px;
+  transition: border-color 0.12s;
+}
+
+.input-row:focus-within {
+  border-color: var(--cyan);
+}
+
+.prompt {
+  color: var(--cyan);
+  font-weight: bold;
+  user-select: none;
+}
+
+input[type='text'] {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+input::placeholder {
+  color: var(--dim);
+}
+
+button {
+  background: transparent;
+  color: var(--cyan-bright);
+  border: 1px solid var(--cyan-border);
+  border-radius: 0;
+  padding: 6px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    color 0.12s,
+    background 0.12s;
+}
+
+button:hover {
+  background: rgba(92, 225, 230, 0.12);
+  border-color: var(--cyan);
+  color: #fff;
+}
+
+.separator {
+  color: var(--dim);
+  font-size: 12px;
+  text-align: center;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.error {
+  color: #ffaaaa;
+  font-size: 13px;
+  padding: 10px;
+  border: 1px solid var(--red-border);
+  border-radius: 0;
+  width: 100%;
+  text-align: center;
+  margin-top: 12px;
+  background: rgba(153, 34, 34, 0.15);
+}
+
+.lobby-cli-footer {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cyan-border);
+  box-sizing: border-box;
+}
+
+.lobby-cli-heading {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.lobby-cli-copy {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #99aabb;
+}
+
+.lobby-cli-copy--muted {
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+.lobby-cli-copy a {
+  color: var(--cyan-bright);
+  text-decoration: none;
+}
+
+.lobby-cli-copy a:hover {
+  text-decoration: underline;
+}
+
+.lobby-cli-block {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg);
+  background: var(--input-bg);
+  border: 1px solid var(--cyan-muted);
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre;
+  text-align: left;
+}
+
+.lobby-github {
+  margin: 20px 0 0;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.lobby-github a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cyan-bright);
+  text-decoration: none;
+}
+
+.lobby-github a:hover {
+  text-decoration: underline;
+}
+
+.lobby-github-icon {
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+/* ─── Meeting Room ───────────────────────────────────────────────────── */
+
+.meeting {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.participants-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 4px 12px;
+  min-height: 28px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  flex-shrink: 0;
+  background: var(--input-bg);
+}
+
+.participant-chip {
+  color: #aaaaaa;
+  white-space: nowrap;
+}
+
+.participant-chip--self {
+  color: var(--cyan-bright);
+}
+
+.meeting-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── Video grid (matches meeting-room.tsx: row + wrap + gap between tiles) ─ */
+
+/* Grid matches terminal `gridLayout` in src/ui/video-sizes.ts (via --vg-cols / --vg-rows) */
+.video-area {
+  flex: 1;
+  display: grid;
+  --vg-cols: 2;
+  --vg-rows: 1;
+  grid-template-columns: repeat(var(--vg-cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--vg-rows), minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+  min-width: 0;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.video-area--solo {
+  --vg-cols: 1;
+  --vg-rows: 1;
+}
+
+/* 2×2 with 3 participants: third tile centered on second row */
+.video-box--orphan {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc((100% - 10px) / 2);
+  max-width: 100%;
+}
+
+.video-status {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 3px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+  border-top: 1px solid var(--border);
+  background: var(--input-bg);
+  color: #888888;
+  letter-spacing: 0.12em;
+}
+
+.video-box {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--video-box-border);
+}
+
+.video-box--self {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px rgba(92, 225, 230, 0.12);
+}
+
+.video-box--remote {
+  border-color: var(--video-box-border-remote);
+}
+
+.video-label {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #8899aa;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.video-label--center {
+  text-align: center;
+  text-transform: none;
+}
+
+.video-box--self .video-label {
+  color: var(--cyan-bright);
+}
+
+.video-inner {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-inner);
+}
+
+/* Uniform scale-to-fit wrapper for ASCII video */
+.video-feed-fit {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.video-feed-fit__layer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max-content;
+  height: max-content;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+}
+
+.video-feed-fit .video-feed {
+  flex: none;
+  min-height: 0;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+}
+
+.video-feed {
+  margin: 0;
+  padding: 4px 6px;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: normal;
+  white-space: pre;
+  font-family: inherit;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  tab-size: 1;
+}
+
+.video-feed--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666666;
+}
+
+.video-feed--plain {
+  color: #cccccc;
+}
+
+.video-feed--plain.dim {
+  color: #888888;
+}
+
+/* True-color ASCII: per-glyph colors from spans (CLI renderColored) */
+.video-feed.ascii-colored {
+  color: #555;
+}
+
+/* ─── Chat (matches ui/chat-panel.tsx) ───────────────────────────────── */
+
+.chat-area {
+  width: min(320px, 32vw);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin: 10px 10px 10px 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--input-bg);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  font-size: 13px;
+  min-height: 0;
+  color: #cccccc;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: var(--cyan-muted);
+  border-radius: 2px;
+}
+
+.chat-msg {
+  margin-bottom: 8px;
+  word-wrap: break-word;
+}
+
+.chat-msg .sender {
+  color: var(--cyan);
+  font-weight: bold;
+}
+
+.chat-msg .time {
+  color: var(--dim);
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.chat-msg .body {
+  color: var(--fg);
+}
+
+.chat-msg.system {
+  color: var(--dim);
+  font-style: normal;
+  font-size: 12px;
+}
+
+.chat-input {
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--panel-inner);
+}
+
+.chat-input:focus-within {
+  border-color: var(--cyan-muted);
+}
+
+/* ─── Controls bar (matches ui/controls-bar.tsx) ───────────────────────── */
+
+.controls-bar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--input-bg);
+  font-size: 12px;
+}
+
+.controls-bar__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  min-width: 0;
+}
+
+.controls-bar__center {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.controls-bar__right {
+  color: #555555;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.room-id-btn {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.room-id-btn:hover .room-id-btn__id {
+  text-decoration: underline;
+}
+
+.room-id-btn__label {
+  color: #888888;
+}
+
+.room-id-btn__id {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.room-id-btn__hint {
+  color: #555555;
+  font-size: 11px;
+}
+
+.room-id-btn__hint--ok {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.controls-meta {
+  color: #888888;
+}
+
+.controls-elapsed {
+  color: #666666;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls-bar .ctrl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 0;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.ctrl-hotkey {
+  opacity: 0.95;
+  font-weight: 700;
+}
+
+.ctrl-on {
+  border-color: var(--green-border);
+  color: var(--green);
+}
+
+.ctrl-on:hover {
+  background: rgba(61, 204, 110, 0.12);
+  border-color: var(--green);
+}
+
+.ctrl-off {
+  border-color: var(--red-border);
+  color: var(--red);
+}
+
+.ctrl-off:hover {
+  background: rgba(153, 34, 34, 0.2);
+}
+
+.ctrl-chat-on {
+  border-color: var(--cyan-border);
+  color: var(--cyan-bright);
+}
+
+.ctrl-chat-on:hover {
+  background: rgba(92, 225, 230, 0.1);
+  border-color: var(--cyan);
+}
+
+.ctrl-chat-off {
+  border-color: #444444;
+  color: #666666;
+}
+
+.ctrl-chat-off:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #666666;
+}
+
+.ctrl-copy {
+  border-color: #887700;
+  color: #dddd66;
+}
+
+.ctrl-copy:hover {
+  background: rgba(224, 200, 0, 0.1);
+  border-color: #aaaa00;
+}
+
+.ctrl-leave {
+  border-color: var(--red-border);
+  color: #ff8888;
+}
+
+.ctrl-leave:hover {
+  background: rgba(224, 80, 80, 0.2);
+  color: #fff;
+}
+
+/* Footer control colors must win over global `button:hover` */
+.controls-bar .ctrl.ctrl-on:hover {
+  color: var(--green);
+}
+
+.controls-bar .ctrl.ctrl-off:hover {
+  color: var(--red);
+}
+
+.controls-bar .ctrl.ctrl-chat-on:hover {
+  color: var(--cyan-bright);
+}
+
+.controls-bar .ctrl.ctrl-chat-off:hover {
+  color: #888888;
+}
+
+.controls-bar .ctrl.ctrl-copy:hover {
+  color: #eeee88;
+}
+
+.controls-bar .ctrl.ctrl-leave:hover {
+  color: #fff;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .meeting-body {
+    flex-direction: column;
+  }
+
+  .chat-area {
+    width: 100%;
+    margin: 0 10px 10px;
+    border-top: 1px solid var(--border);
+    max-height: 200px;
+  }
+
+  .video-area:not(.video-area--solo) {
+    --vg-cols: 1 !important;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: minmax(0, min(42vh, 360px));
+  }
+
+  .video-area--solo {
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .video-box--orphan {
+    grid-column: auto;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .controls-bar__right {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -1,12 +1,12 @@
 {
   "name": "termeet",
   "version": "0.1.0",
-  "description": "Meet for the terminal — video conferencing with ASCII art",
+  "description": "Termeet - Video conferencing with ASCII art",
   "module": "src/index.tsx",
   "type": "module",
   "private": false,
   "author": "Gegham Khachatryan <gegham.k99@gmail.com>",
-  "homepage": "https://termeet.mi.am",
+  "homepage": "https://termeet.app",
   "keywords": [
     "video",
     "conferencing",
@@ -40,6 +40,7 @@
     "build:cli": "bun run scripts/cli-build.ts --single",
     "build:cli:all": "bun run scripts/cli-build.ts",
     "publish:cli": "bun run scripts/cli-publish.ts",
+    "build:web": "cd web && bun install && bun run build",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

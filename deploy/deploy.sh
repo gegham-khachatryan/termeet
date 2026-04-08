@@ -6,9 +6,9 @@
 #   bash deploy/deploy.sh <droplet-ip> [ssh-port]
 #
 # Examples:
-#   bash deploy/deploy.sh 164.90.xxx.xxx
-#   bash deploy/deploy.sh 164.90.xxx.xxx 2200
+#   bash deploy/deploy.sh 165.227.133.246
 #   bash deploy/deploy.sh termeet.app
+#   bash deploy/deploy.sh termeet.app 2200
 
 set -euo pipefail
 
@@ -24,7 +24,12 @@ echo ""
 echo "Deploying to $HOST..."
 echo ""
 
-# ─── 1. Sync files ──────────────────────────────────────────────────────────
+# ─── 1. Build web frontend locally ──────────────────────────────────────────
+
+echo "→ Building web frontend..."
+(cd web && bun install && bun run build)
+
+# ─── 2. Sync files ──────────────────────────────────────────────────────────
 
 echo "→ Syncing project files..."
 rsync -avz --delete \
@@ -33,9 +38,12 @@ rsync -avz --delete \
   --exclude .git \
   --exclude .env \
   --exclude .DS_Store \
+  --exclude dist \
+  --exclude web/node_modules \
+  --exclude web/src \
   ./ "root@${HOST}:${APP_DIR}/"
 
-# ─── 2. Install dependencies on server ──────────────────────────────────────
+# ─── 3. Install dependencies on server ──────────────────────────────────────
 
 echo "→ Installing dependencies on server..."
 ssh $SSH_OPTS "root@${HOST}" << 'REMOTE'
@@ -48,21 +56,27 @@ ssh $SSH_OPTS "root@${HOST}" << 'REMOTE'
   chown -R termeet:termeet /opt/termeet
 REMOTE
 
-# ─── 3. Restart service ─────────────────────────────────────────────────────
+# ─── 4. Restart services ───────────────────────────────────────────────────
 
-echo "→ Restarting Termeet service..."
-ssh $SSH_OPTS "root@${HOST}" "systemctl restart termeet"
+echo "→ Restarting services..."
+ssh $SSH_OPTS "root@${HOST}" << 'REMOTE'
+  systemctl restart termeet
+  # Reload nginx in case config changed
+  nginx -t && systemctl reload nginx
+REMOTE
 
-# ─── 4. Verify ──────────────────────────────────────────────────────────────
+# ─── 5. Verify ──────────────────────────────────────────────────────────────
 
 echo "→ Checking service status..."
 sleep 2
-ssh $SSH_OPTS "root@${HOST}" "systemctl is-active termeet && curl -sf http://localhost:3483/health | head -1"
+ssh $SSH_OPTS "root@${HOST}" "systemctl is-active termeet && systemctl is-active nginx && curl -sf http://localhost:3483/health | head -1"
 
 echo ""
 echo "✅ Deployed successfully!"
 echo ""
-echo "Clients: TERMEET_HOST=${HOST} bun run dev   (or set in .env)"
+echo "Web UI:  https://termeet.app"
+echo "WS:     wss://termeet.app/ws"
 echo ""
-echo "View logs on server:"
+echo "View logs:"
 echo "  ssh root@${HOST} 'journalctl -u termeet -f'"
+echo "  ssh root@${HOST} 'journalctl -u nginx -f'"
