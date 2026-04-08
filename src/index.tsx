@@ -15,6 +15,7 @@ function printHelp() {
 
   Usage:
     termeet                    Launch the client (connects to a signaling server)
+    termeet --room <id>        Join a room immediately
     termeet --help             Show this help message
 
   Environment Variables:
@@ -53,10 +54,17 @@ async function main() {
     process.exit(1)
   }
 
+  // Parse --room flag
+  let initialRoomId: string | undefined
+  const roomFlagIdx = args.indexOf("--room")
+  if (roomFlagIdx !== -1 && args[roomFlagIdx + 1]) {
+    initialRoomId = args[roomFlagIdx + 1]
+  }
+
   // Default: Launch client UI
   const renderer = await createCliRenderer()
   const root = createRoot(renderer)
-  root.render(<App />)
+  root.render(<App initialRoomId={initialRoomId} />)
 }
 
 main().catch((err) => {

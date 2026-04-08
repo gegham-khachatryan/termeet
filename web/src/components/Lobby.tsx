@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<ConnectionState, string> = {
 const GITHUB_REPO = 'https://github.com/gegham-khachatryan/termeet'
 
 export function Lobby({ connState, error, onCreateRoom, onJoinRoom }: LobbyProps) {
-  const [userName, setUserName] = useState('')
+  const [userName, setUserName] = useState(() => localStorage.getItem('termeet_display_name') ?? '')
   const [roomName, setRoomName] = useState('')
   const [roomId, setRoomId] = useState('')
 
@@ -63,7 +63,10 @@ export function Lobby({ connState, error, onCreateRoom, onJoinRoom }: LobbyProps
               type='text'
               placeholder='anonymous'
               value={userName}
-              onChange={(e) => setUserName(e.target.value)}
+              onChange={(e) => {
+              setUserName(e.target.value)
+              localStorage.setItem('termeet_display_name', e.target.value)
+            }}
               autoComplete='off'
               spellCheck={false}
             />

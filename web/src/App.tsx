@@ -179,7 +179,7 @@ function AppShell() {
     const key = `${connectEpoch}:${roomIdFromRoute}`
     if (lastRejoinKey.current === key) return
     lastRejoinKey.current = key
-    const userName = sessionStorage.getItem(DISPLAY_NAME_KEY) ?? "anonymous"
+    const userName = localStorage.getItem(DISPLAY_NAME_KEY) ?? "anonymous"
     send({ type: "join-room", roomId: roomIdFromRoute, userName })
   }, [connState, connectEpoch, roomIdFromRoute, room, send])
 
@@ -187,7 +187,7 @@ function AppShell() {
     (roomName: string, userName: string) => {
       leavingRef.current = false
       const n = userName.trim() || "anonymous"
-      sessionStorage.setItem(DISPLAY_NAME_KEY, n)
+      localStorage.setItem(DISPLAY_NAME_KEY, n)
       send({ type: "create-room", name: roomName, userName: n })
     },
     [send],
@@ -197,7 +197,7 @@ function AppShell() {
     (roomId: string, userName: string) => {
       leavingRef.current = false
       const n = userName.trim() || "anonymous"
-      sessionStorage.setItem(DISPLAY_NAME_KEY, n)
+      localStorage.setItem(DISPLAY_NAME_KEY, n)
       send({ type: "join-room", roomId, userName: n })
     },
     [send],

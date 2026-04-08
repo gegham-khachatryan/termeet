@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useKeyboard, useTerminalDimensions } from '@opentui/react'
 import { inputChrome } from './input-chrome.ts'
+import { getSavedUserName, saveUserName } from '../lib/config.ts'
 
 interface LobbyProps {
   onCreateRoom: (roomName: string, userName: string) => void
@@ -95,7 +96,7 @@ function Button({ label, onPress, focused, variant = 'primary', flexGrow }: Butt
 export function Lobby({ onCreateRoom, onJoinRoom, onQuit, connectionState, error }: LobbyProps) {
   const { width: termW } = useTerminalDimensions()
   const [mode, setMode] = useState<'menu' | 'create' | 'join'>('menu')
-  const [userName, setUserName] = useState('')
+  const [userName, setUserName] = useState(() => getSavedUserName())
   const [roomName, setRoomName] = useState('')
   const [roomId, setRoomId] = useState('')
   const [focusedField, setFocusedField] = useState<'name' | 'room' | 'submit' | 'back'>('name')
@@ -104,8 +105,10 @@ export function Lobby({ onCreateRoom, onJoinRoom, onQuit, connectionState, error
 
   const handleSubmit = useCallback(() => {
     if (mode === 'create' && userName && roomName) {
+      saveUserName(userName)
       onCreateRoom(roomName, userName)
     } else if (mode === 'join' && userName && roomId) {
+      saveUserName(userName)
       onJoinRoom(roomId, userName)
     }
   }, [mode, userName, roomName, roomId, onCreateRoom, onJoinRoom])
@@ -266,6 +269,14 @@ export function Lobby({ onCreateRoom, onJoinRoom, onQuit, connectionState, error
               style={inputChrome}
             />
           </box>
+
+          {error && (
+            <box paddingX={2} paddingY={1} border borderStyle='rounded' borderColor='#aa3333' marginTop={1}>
+              <text fg='#ffaaaa'>
+                <b>!</b> {error}
+              </text>
+            </box>
+          )}
 
           <box flexDirection='row' justifyContent='space-between' marginTop={2} gap={2} width='100%'>
             <Button

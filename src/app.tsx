@@ -13,13 +13,18 @@ import { CameraCapture } from "./media/camera.ts"
 import { AsciiRenderer, generateTestFrame, downsampleFrame } from "./media/ascii-renderer.ts"
 import type { RawFrame } from "./media/camera.ts"
 import { AudioCapture, AudioPlayback } from "./media/audio.ts"
+import { getSavedUserName } from "./lib/config.ts"
 import { Lobby } from "./ui/lobby.tsx"
 import { MeetingRoom } from "./ui/meeting-room.tsx"
 import { asciiStreamDimensions, meetingAsciiDimensions } from "./ui/video-sizes.ts"
 
 type AppView = "lobby" | "meeting"
 
-export function App() {
+interface AppProps {
+  initialRoomId?: string
+}
+
+export function App({ initialRoomId }: AppProps) {
   const cliRenderer = useRenderer()
   const { width: termW, height: termH } = useTerminalDimensions()
 
@@ -96,6 +101,7 @@ export function App() {
         },
         onRoomNotFound: () => {
           setError("Room not found. Check the Room ID and try again.")
+          setTimeout(() => setError(null), 4000)
         },
         onParticipantJoined: (participant) => {
           setRoom((prev) => {
@@ -177,6 +183,19 @@ export function App() {
 
     client.connect()
     clientRef.current = client
+
+    // Auto-join room if --room flag was provided
+    if (initialRoomId) {
+      const waitForConnection = () => {
+        if (client.state === "connected") {
+          const name = getSavedUserName() || "anonymous"
+          client.joinRoom(initialRoomId, name)
+        } else {
+          setTimeout(waitForConnection, 200)
+        }
+      }
+      waitForConnection()
+    }
 
     return () => {
       client.disconnect()

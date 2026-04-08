@@ -57,6 +57,12 @@ npm install -g termeet
 termeet
 ```
 
+Got a room code? Skip the lobby:
+
+```bash
+termeet --room <room-id>
+```
+
 By default the CLI talks to the shared signal behind **[termeet.app](https://termeet.app)** (`wss://termeet.app/ws`). Self-hosting? Point the client at your own server with `TERMEET_WS_URL`, or `TERMEET_HOST` / `TERMEET_PORT` for a plain `ws://` box on your network.
 
 The published npm package ships a **standalone binary** (Bun + bundled ffmpeg where we can). Optional **ffplay** is on you if your OS does not bundle it — full ffmpeg installs usually include it.
