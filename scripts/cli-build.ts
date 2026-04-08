@@ -160,6 +160,21 @@ function copyFfplayFromPath(binDir: string, win: boolean) {
   }
 }
 
+/** Map build target slug to the @opentui/core platform package name. */
+function opentuiPkgName(npmOs: string, npmCpu: string): string {
+  // @opentui/core uses node-style platform names: darwin, linux, win32
+  return `@opentui/core-${npmOs}-${npmCpu}`
+}
+
+/** Ensure the native @opentui/core-<platform>-<arch> package is present. */
+async function ensureOpentuiPlatformPkg(npmOs: string, npmCpu: string) {
+  const name = opentuiPkgName(npmOs, npmCpu)
+  const pkgDir = join(ROOT, "node_modules", ...name.split("/"))
+  if (existsSync(pkgDir)) return
+  console.log(`  Installing ${name} for cross-compilation…`)
+  await $`${process.execPath} add --no-save ${name}`.cwd(ROOT)
+}
+
 const distRoot = join(ROOT, "dist")
 mkdirSync(distRoot, { recursive: true })
 
@@ -172,6 +187,9 @@ for (const t of targets) {
   const binPath = join(binDir, t.bin)
 
   mkdirSync(binDir, { recursive: true })
+
+  // Ensure the target platform's native @opentui/core package is available
+  await ensureOpentuiPlatformPkg(t.npmOs, t.npmCpu)
 
   console.log(`  → ${t.target}`)
   await $`${process.execPath} build ${join(ROOT, "src/index.tsx")} --compile --target=${t.target} --outfile=${binPath} --sourcemap=none`.cwd(
