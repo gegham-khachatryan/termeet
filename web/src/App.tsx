@@ -185,6 +185,7 @@ function AppShell() {
 
   const handleCreateRoom = useCallback(
     (roomName: string, userName: string) => {
+      leavingRef.current = false
       const n = userName.trim() || "anonymous"
       sessionStorage.setItem(DISPLAY_NAME_KEY, n)
       send({ type: "create-room", name: roomName, userName: n })
@@ -194,6 +195,7 @@ function AppShell() {
 
   const handleJoinRoom = useCallback(
     (roomId: string, userName: string) => {
+      leavingRef.current = false
       const n = userName.trim() || "anonymous"
       sessionStorage.setItem(DISPLAY_NAME_KEY, n)
       send({ type: "join-room", roomId, userName: n })
@@ -222,6 +224,7 @@ function AppShell() {
   }, [send])
 
   const handleLeave = useCallback(() => {
+    leavingRef.current = true
     send({ type: "leave-room" })
     stopCamera()
     navigate("/", { replace: true })
