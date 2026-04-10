@@ -22,7 +22,8 @@ export class AudioCapture {
 
     if (platform === "darwin") {
       inputFormat = "avfoundation"
-      inputDevice = ":0" // Default audio input
+      // ":0" is often a virtual device (e.g. ZoomAudioDevice). Use default mic instead.
+      inputDevice = process.env["AUDIO_INPUT_DEVICE"] ?? ":default"
     } else if (platform === "linux") {
       inputFormat = "pulse"
       inputDevice = "default"

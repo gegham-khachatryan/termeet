@@ -6,25 +6,33 @@ const CHUNK_INTERVAL_MS = 100
 
 /**
  * Web client audio hook — captures mic via Web Audio API,
- * encodes PCM s16le chunks, and plays back received audio.
+ * sends raw PCM via onRawPcm callback (for WebRTC DataChannels),
+ * and sends base64-encoded PCM via WebSocket (for CLI fallback).
  */
 export function useAudio(
   active: boolean,
   micOn: boolean,
   send: (msg: ClientMessage) => void,
+  onRawPcm?: (pcmData: ArrayBuffer) => void,
 ) {
   const ctxRef = useRef<AudioContext | null>(null)
   const workletNodeRef = useRef<AudioWorkletNode | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const playbackCtxRef = useRef<AudioContext | null>(null)
   const nextPlayTimeRef = useRef(0)
+  const onRawPcmRef = useRef(onRawPcm)
+  onRawPcmRef.current = onRawPcm
+  const micOnRef = useRef(micOn)
+  micOnRef.current = micOn
 
-  // ── Capture: mic → PCM s16le → base64 → WebSocket ──────────────
+  // ── Capture: acquire mic once when active, keep alive across mute toggles ──
   useEffect(() => {
-    if (!active || !micOn) {
-      // Stop capture when inactive or muted
+    if (!active) {
       workletNodeRef.current?.disconnect()
       workletNodeRef.current = null
+      sourceRef.current?.disconnect()
+      sourceRef.current = null
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
       if (ctxRef.current) {
@@ -48,7 +56,6 @@ export function useAudio(
         const ctx = new AudioContext({ sampleRate: SAMPLE_RATE })
         ctxRef.current = ctx
 
-        // Register a simple processor worklet inline via Blob
         const workletCode = `
 class PcmCaptureProcessor extends AudioWorkletProcessor {
   constructor() {
@@ -89,13 +96,20 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
         }
 
         const source = ctx.createMediaStreamSource(stream)
+        sourceRef.current = source
         const workletNode = new AudioWorkletNode(ctx, "pcm-capture-processor")
         workletNodeRef.current = workletNode
 
         workletNode.port.onmessage = (e: MessageEvent) => {
+          if (!micOnRef.current) return
+
           const buffer = e.data as ArrayBuffer
+
+          // Send raw PCM to WebRTC DataChannels
+          onRawPcmRef.current?.(buffer)
+
+          // Send base64-encoded PCM via WebSocket (for CLI fallback)
           const bytes = new Uint8Array(buffer)
-          // Convert to base64
           let binary = ""
           for (let i = 0; i < bytes.length; i++) {
             binary += String.fromCharCode(bytes[i])
@@ -105,7 +119,12 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
         }
 
         source.connect(workletNode)
-        workletNode.connect(ctx.destination) // needed to keep the graph alive
+        // Connect through a silent gain node to keep the graph alive
+        // without playing captured audio back through the speakers
+        const silentGain = ctx.createGain()
+        silentGain.gain.value = 0
+        workletNode.connect(silentGain)
+        silentGain.connect(ctx.destination)
       } catch {
         // Mic unavailable or permission denied
       }
@@ -117,6 +136,8 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
       cancelled = true
       workletNodeRef.current?.disconnect()
       workletNodeRef.current = null
+      sourceRef.current?.disconnect()
+      sourceRef.current = null
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
       if (ctxRef.current) {
@@ -124,9 +145,18 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
         ctxRef.current = null
       }
     }
-  }, [active, micOn, send])
+  }, [active, send])
 
-  // ── Playback: receive PCM s16le base64 → Web Audio API ──────────
+  // ── Mute/unmute: toggle track.enabled instead of destroying stream ──
+  useEffect(() => {
+    const stream = streamRef.current
+    if (!stream) return
+    stream.getAudioTracks().forEach((t) => {
+      t.enabled = micOn
+    })
+  }, [micOn])
+
+  // ── Playback: receive PCM s16le base64 → Web Audio API (for WebSocket fallback) ──
   useEffect(() => {
     if (!active) {
       if (playbackCtxRef.current) {
@@ -149,16 +179,15 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
     }
   }, [active])
 
+  /** Play base64-encoded PCM audio (WebSocket fallback path) */
   const playAudio = useCallback((data: string) => {
     const ctx = playbackCtxRef.current
     if (!ctx) return
 
-    // Resume context if suspended (browser autoplay policy)
     if (ctx.state === "suspended") {
       ctx.resume()
     }
 
-    // Decode base64 → Int16 → Float32
     const binary = atob(data)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) {
@@ -175,15 +204,41 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
 
     const source = ctx.createBufferSource()
     source.buffer = audioBuffer
-
     source.connect(ctx.destination)
 
-    // Schedule chunks sequentially to avoid gaps/overlaps
     const now = ctx.currentTime
     const startTime = Math.max(now, nextPlayTimeRef.current)
     source.start(startTime)
     nextPlayTimeRef.current = startTime + audioBuffer.duration
   }, [])
 
-  return { playAudio }
+  /** Play raw PCM ArrayBuffer (WebRTC DataChannel path) */
+  const playRawAudio = useCallback((pcmData: ArrayBuffer) => {
+    const ctx = playbackCtxRef.current
+    if (!ctx) return
+
+    if (ctx.state === "suspended") {
+      ctx.resume()
+    }
+
+    const int16 = new Int16Array(pcmData)
+    const float32 = new Float32Array(int16.length)
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 0x8000
+    }
+
+    const audioBuffer = ctx.createBuffer(1, float32.length, SAMPLE_RATE)
+    audioBuffer.copyToChannel(float32, 0)
+
+    const source = ctx.createBufferSource()
+    source.buffer = audioBuffer
+    source.connect(ctx.destination)
+
+    const now = ctx.currentTime
+    const startTime = Math.max(now, nextPlayTimeRef.current)
+    source.start(startTime)
+    nextPlayTimeRef.current = startTime + audioBuffer.duration
+  }, [])
+
+  return { playAudio, playRawAudio }
 }

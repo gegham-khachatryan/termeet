@@ -15,6 +15,7 @@ interface VideoPanelProps {
   myId: string
   localDisplay: AsciiVideoDisplay | null
   remoteDisplays: Record<string, AsciiVideoDisplay | undefined>
+  webrtcPeers: Set<string>
 }
 
 function renderTile(display: AsciiVideoDisplay | null | undefined, emptyLabel: string) {
@@ -41,7 +42,7 @@ function orderedParticipants(participants: Participant[], myId: string): Partici
   return self ? [self, ...others] : [...participants]
 }
 
-export function VideoPanel({ roomName, participants, myId, localDisplay, remoteDisplays }: VideoPanelProps) {
+export function VideoPanel({ roomName, participants, myId, localDisplay, remoteDisplays, webrtcPeers }: VideoPanelProps) {
   const ordered = orderedParticipants(participants, myId)
   const n = ordered.length
   const solo = n <= 1
@@ -63,6 +64,7 @@ export function VideoPanel({ roomName, participants, myId, localDisplay, remoteD
         const title = isSelf ? `${roomName} (You)` : p.name
         const muteIcon = p.isMuted ? '🔇' : '🎤'
         const camIcon = p.isCameraOn ? '📹' : '📷'
+        const connType = isSelf ? null : webrtcPeers.has(p.id) ? 'p2p' : 'relay'
         const orphanClass = n === 3 && gridCols === 2 && i === 2 ? ' video-box--orphan' : ''
         return (
           <div key={p.id} className={`video-box ${isSelf ? 'video-box--self' : 'video-box--remote'}${orphanClass}`}>
@@ -70,6 +72,7 @@ export function VideoPanel({ roomName, participants, myId, localDisplay, remoteD
             <div className='video-inner'>{renderTile(display ?? null, emptyLabel)}</div>
             <div className='video-status' aria-hidden>
               {muteIcon} {camIcon}
+              {connType && <span className={`conn-badge conn-badge--${connType}`}>{connType}</span>}
             </div>
           </div>
         )

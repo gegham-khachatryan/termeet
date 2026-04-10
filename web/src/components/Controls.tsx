@@ -5,6 +5,7 @@ interface ControlsProps {
   clipboardHint: string | null
   roomId: string
   participantCount: number
+  webrtcPeerCount: number
   elapsed: string
   onToggleMute: () => void
   onToggleCamera: () => void
@@ -38,6 +39,7 @@ export function Controls({
   clipboardHint,
   roomId,
   participantCount,
+  webrtcPeerCount,
   elapsed,
   onToggleMute,
   onToggleCamera,
@@ -59,6 +61,9 @@ export function Controls({
         </button>
         <span className="controls-meta">
           {participantCount} participant{participantCount !== 1 ? "s" : ""}
+          {webrtcPeerCount > 0 && (
+            <span className="controls-conn"> ({webrtcPeerCount} p2p)</span>
+          )}
         </span>
         <span className="controls-elapsed">{elapsed}</span>
       </div>

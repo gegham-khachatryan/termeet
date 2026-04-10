@@ -665,6 +665,30 @@ button:hover {
   color: #888888;
 }
 
+.controls-conn {
+  color: #4ecdc4;
+}
+
+.conn-badge {
+  display: inline-block;
+  font-size: 0.65em;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.5px;
+}
+.conn-badge--p2p {
+  background: #1a3a2a;
+  color: #4ecdc4;
+}
+.conn-badge--relay {
+  background: #3a3520;
+  color: #c4a84e;
+}
+
 .controls-elapsed {
   color: #666666;
   font-variant-numeric: tabular-nums;

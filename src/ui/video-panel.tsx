@@ -8,6 +8,8 @@ interface VideoPanelProps {
   isCameraOn: boolean
   isSelf?: boolean
   isPinned?: boolean
+  /** Connection type: 'p2p' for WebRTC, 'relay' for WebSocket, null for self. */
+  connType?: 'p2p' | 'relay' | null
   width?: number
   height?: number
   onPin?: () => void
@@ -20,13 +22,15 @@ export function VideoPanel({
   isCameraOn,
   isSelf = false,
   isPinned = false,
+  connType = null,
   width,
   height,
   onPin
 }: VideoPanelProps) {
   const borderColor = isPinned ? 'yellow' : isSelf ? 'cyan' : '#888888'
 
-  const statusIcons = [isMuted ? '🔇' : '🎤', isCameraOn ? '📹' : '📷', isPinned ? '📌' : ''].filter(Boolean).join(' ')
+  const connLabel = connType === 'p2p' ? ' [p2p]' : connType === 'relay' ? ' [relay]' : ''
+  const statusIcons = [isMuted ? '🔇' : '🎤', isCameraOn ? '📹' : '📷', isPinned ? '📌' : ''].filter(Boolean).join(' ') + connLabel
 
   const displayName = isSelf ? `${name} (You)` : name
 

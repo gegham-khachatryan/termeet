@@ -5,6 +5,7 @@ import type { ChatEntry } from "./components/ChatPanel"
 import { useWebSocket } from "./hooks/useWebSocket"
 import { useCamera } from "./hooks/useCamera"
 import { useAudio } from "./hooks/useAudio"
+import { useWebRTC } from "./hooks/useWebRTC"
 import { Lobby } from "./components/Lobby"
 import { Meeting } from "./components/Meeting"
 import { fromBase64, isBase64Frame, renderRgbToColoredLines } from "./ascii"
@@ -33,12 +34,74 @@ function AppShell() {
   const [chatMessages, setChatMessages] = useState<ChatEntry[]>([])
 
   const myIdRef = useRef<string | null>(null)
+  const roomRef = useRef<Room | null>(null)
   const lastRejoinKey = useRef("")
   const leavingRef = useRef(false)
+
+  roomRef.current = room
+
+  // Stable send wrapper — ref is updated after useWebSocket initializes
+  const wsSendRef = useRef<(msg: import("./types").ClientMessage) => void>(() => {})
+  const stableSend = useCallback((msg: import("./types").ClientMessage) => {
+    wsSendRef.current(msg)
+  }, [])
+
+  // Send wrapper that skips media messages when all remote peers use WebRTC
+  const mediaFallbackSend = useCallback((msg: import("./types").ClientMessage) => {
+    const r = roomRef.current
+    if (r) {
+      const remoteCount = r.participants.filter((p) => p.id !== myIdRef.current).length
+      if (remoteCount > 0 && webrtcPeersRef.current.size >= remoteCount) return
+    }
+    wsSendRef.current(msg)
+  }, [])
 
   const addSystem = useCallback((text: string) => {
     setChatMessages((prev) => [...prev, { id: nextChatId(), type: "system", text }])
   }, [])
+
+  // ── WebRTC hook (DataChannel-based, compatible with both web + CLI peers) ──
+
+  const {
+    webrtcPeers,
+    sendAudio: rtcSendAudio,
+    sendVideo: rtcSendVideo,
+    handlePeerJoined,
+    handlePeerLeft,
+    handleSignalingMessage,
+    cleanup: cleanupWebRTC,
+  } = useWebRTC({
+    myId,
+    send: stableSend,
+    onAudioData: (_peerId, pcmData) => {
+      playRawAudioRef.current?.(pcmData)
+    },
+    onVideoFrame: (peerId, width, height, rgbData) => {
+      try {
+        const lines = renderRgbToColoredLines(rgbData, width, height, 100, 40)
+        setRemoteDisplays((prev) => ({ ...prev, [peerId]: { type: "colored", lines } }))
+      } catch {
+        // Invalid frame
+      }
+    },
+    onPeerConnected: (_peerId) => {},
+    onPeerDisconnected: (_peerId) => {},
+  })
+
+  const webrtcPeersRef = useRef(webrtcPeers)
+  webrtcPeersRef.current = webrtcPeers
+  const handlePeerJoinedRef = useRef(handlePeerJoined)
+  handlePeerJoinedRef.current = handlePeerJoined
+  const handlePeerLeftRef = useRef(handlePeerLeft)
+  handlePeerLeftRef.current = handlePeerLeft
+  const handleSignalingMessageRef = useRef(handleSignalingMessage)
+  handleSignalingMessageRef.current = handleSignalingMessage
+  const rtcSendAudioRef = useRef(rtcSendAudio)
+  rtcSendAudioRef.current = rtcSendAudio
+  const rtcSendVideoRef = useRef(rtcSendVideo)
+  rtcSendVideoRef.current = rtcSendVideo
+
+  // ── WebSocket message handler ──
 
   const onMessage = useCallback(
     (msg: ServerMessage) => {
@@ -81,6 +144,7 @@ function AppShell() {
             return { ...prev, participants: [...prev.participants, msg.participant] }
           })
           addSystem(`${msg.participant.name} joined`)
+          handlePeerJoinedRef.current(msg.participant.id)
           break
 
         case "participant-left":
@@ -98,6 +162,7 @@ function AppShell() {
             delete next[msg.participantId]
             return next
           })
+          handlePeerLeftRef.current(msg.participantId)
           break
 
         case "participant-updated":
@@ -129,6 +194,8 @@ function AppShell() {
         case "video-frame": {
           const sid = msg.frame.senderId
           if (sid === myIdRef.current) break
+          // Skip WebSocket video from peers with active WebRTC connections
+          if (webrtcPeersRef.current.has(sid)) break
           const { data, width, height } = msg.frame
           let display: AsciiVideoDisplay
           if (isBase64Frame(data, width, height)) {
@@ -148,8 +215,16 @@ function AppShell() {
 
         case "audio-data":
           if (msg.senderId !== myIdRef.current) {
+            // Skip WebSocket audio from peers with active WebRTC connections
+            if (webrtcPeersRef.current.has(msg.senderId)) break
             playAudioRef.current?.(msg.data)
           }
+          break
+
+        case "webrtc-offer":
+        case "webrtc-answer":
+        case "webrtc-ice-candidate":
+          handleSignalingMessageRef.current(msg)
           break
 
         case "error":
@@ -162,17 +237,41 @@ function AppShell() {
   )
 
   const { connState, connectEpoch, send } = useWebSocket(onMessage)
+  wsSendRef.current = send
 
   const [micOn, setMicOn] = useState(true)
 
+  // Camera: send raw RGB via WebRTC DataChannels, base64 via WS only when needed
   const { cameraOn, localDisplay, startCamera, stopCamera, toggleCamera } =
-    useCamera(myId, (frame) => {
-      send({ type: "video-frame", frame })
-    })
+    useCamera(
+      myId,
+      (frame) => {
+        mediaFallbackSend({ type: "video-frame", frame })
+      },
+      (width, height, rgbData) => {
+        // Send raw RGB to all WebRTC-connected peers
+        for (const peerId of webrtcPeersRef.current) {
+          rtcSendVideoRef.current(peerId, width, height, rgbData)
+        }
+      },
+    )
 
-  const { playAudio } = useAudio(view === "meeting", micOn, send)
+  // Audio: send raw PCM via WebRTC DataChannels, base64 via WS only when needed
+  const { playAudio, playRawAudio } = useAudio(
+    view === "meeting",
+    micOn,
+    mediaFallbackSend,
+    (pcmData) => {
+      // Send raw PCM to all WebRTC-connected peers
+      for (const peerId of webrtcPeersRef.current) {
+        rtcSendAudioRef.current(peerId, pcmData)
+      }
+    },
+  )
   const playAudioRef = useRef(playAudio)
   playAudioRef.current = playAudio
+  const playRawAudioRef = useRef(playRawAudio)
+  playRawAudioRef.current = playRawAudio
 
   useEffect(() => {
     if (connState !== "connected" || !roomIdFromRoute || room || leavingRef.current) return
@@ -227,6 +326,7 @@ function AppShell() {
     leavingRef.current = true
     send({ type: "leave-room" })
     stopCamera()
+    cleanupWebRTC()
     navigate("/", { replace: true })
     setView("lobby")
     setMyId(null)
@@ -234,7 +334,7 @@ function AppShell() {
     setRoom(null)
     setRemoteDisplays({})
     setChatMessages([])
-  }, [send, stopCamera, navigate])
+  }, [send, stopCamera, navigate, cleanupWebRTC])
 
   useEffect(() => {
     if (view === "meeting") {
@@ -281,6 +381,7 @@ function AppShell() {
           chatMessages={chatMessages}
           cameraOn={cameraOn}
           micOn={micOn}
+          webrtcPeers={webrtcPeers}
           onSendChat={handleSendChat}
           onToggleCamera={handleToggleCamera}
           onToggleMic={handleToggleMic}

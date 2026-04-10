@@ -41,6 +41,7 @@
     "build:cli:all": "bun run scripts/cli-build.ts",
     "publish:cli": "bun run scripts/cli-publish.ts",
     "build:web": "cd web && bun install && bun run build",
+    "test:audio": "bun run src/test-audio.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -60,6 +61,7 @@
     "nanoid": "^5.1.7",
     "react": "^19.2.4",
     "uuid": "^13.0.0",
+    "werift": "^0.22.9",
     "ws": "^8.20.0"
   }
 }

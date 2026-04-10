@@ -15,6 +15,7 @@ const FPS = 12
 export function useCamera(
   myId: string | null,
   onFrame: (frame: AsciiFrame) => void,
+  onRawFrame?: (width: number, height: number, rgbData: Uint8Array) => void,
 ) {
   const [cameraOn, setCameraOn] = useState(true)
   const [localDisplay, setLocalDisplay] = useState<AsciiVideoDisplay | null>(null)
@@ -25,6 +26,8 @@ export function useCamera(
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const onFrameRef = useRef(onFrame)
   onFrameRef.current = onFrame
+  const onRawFrameRef = useRef(onRawFrame)
+  onRawFrameRef.current = onRawFrame
   const myIdRef = useRef(myId)
   myIdRef.current = myId
 
@@ -94,6 +97,9 @@ export function useCamera(
 
     const id = myIdRef.current
     if (id) {
+      // Send raw RGB to WebRTC DataChannels
+      onRawFrameRef.current?.(CAPTURE_W, CAPTURE_H, rgb)
+      // Send base64-encoded frame via WebSocket (for CLI fallback)
       onFrameRef.current({
         senderId: id,
         width: CAPTURE_W,

@@ -14,6 +14,7 @@ interface MeetingProps {
   chatMessages: ChatEntry[]
   cameraOn: boolean
   micOn: boolean
+  webrtcPeers: Set<string>
   onSendChat: (content: string) => void
   onToggleCamera: () => void
   onToggleMic: () => void
@@ -28,6 +29,7 @@ export function Meeting({
   chatMessages,
   cameraOn,
   micOn,
+  webrtcPeers,
   onSendChat,
   onToggleCamera,
   onToggleMic,
@@ -137,6 +139,7 @@ export function Meeting({
           myId={myId}
           localDisplay={localDisplay}
           remoteDisplays={remoteDisplays}
+          webrtcPeers={webrtcPeers}
         />
         {chatVisible && (
           <ChatPanel messages={chatMessages} onSend={onSendChat} inputRef={chatInputRef} />
@@ -150,6 +153,7 @@ export function Meeting({
         clipboardHint={clipboardHint}
         roomId={room.id}
         participantCount={room.participants.length}
+        webrtcPeerCount={webrtcPeers.size}
         elapsed={elapsed}
         onToggleMute={onToggleMic}
         onToggleCamera={onToggleCamera}

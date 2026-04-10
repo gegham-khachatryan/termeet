@@ -14,6 +14,7 @@ export interface TermeetClientEvents {
   onChatMessage: (message: ChatMessage) => void
   onVideoFrame: (frame: AsciiFrame) => void
   onAudioData: (senderId: string, data: string, timestamp: number) => void
+  onWebRTCSignaling: (msg: ServerMessage) => void
   onError: (message: string) => void
 }
 
@@ -129,6 +130,11 @@ export class TermeetClient {
       case 'audio-data':
         this.events.onAudioData(msg.senderId, msg.data, msg.timestamp)
         break
+      case 'webrtc-offer':
+      case 'webrtc-answer':
+      case 'webrtc-ice-candidate':
+        this.events.onWebRTCSignaling(msg)
+        break
       case 'error':
         this.events.onError(msg.message)
         break
@@ -169,5 +175,9 @@ export class TermeetClient {
 
   toggleCamera(isCameraOn: boolean): void {
     this.send({ type: 'toggle-camera', isCameraOn })
+  }
+
+  sendWebRTCSignaling(msg: ClientMessage): void {
+    this.send(msg)
   }
 }

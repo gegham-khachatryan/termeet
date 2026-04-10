@@ -9,6 +9,7 @@ import {
   DEFAULT_SERVER_PORT,
 } from "./protocol.ts"
 import { TermeetClient, type ConnectionState } from "./network/client.ts"
+import { WebRTCManager } from "./network/webrtc.ts"
 import { CameraCapture } from "./media/camera.ts"
 import { AsciiRenderer, generateTestFrame, downsampleFrame } from "./media/ascii-renderer.ts"
 import type { RawFrame } from "./media/camera.ts"
@@ -45,15 +46,30 @@ export function App({ initialRoomId }: AppProps) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatVisible, setChatVisible] = useState(false)
   const [pinnedParticipantId, setPinnedParticipantId] = useState<string | null>(null)
+  const [webrtcPeers, setWebrtcPeers] = useState<Set<string>>(new Set())
 
   // ─── Refs ───────────────────────────────────────────────────────────
   const clientRef = useRef<TermeetClient | null>(null)
+  const webrtcRef = useRef<WebRTCManager | null>(null)
   const cameraRef = useRef<CameraCapture | null>(null)
   const rendererRef = useRef<AsciiRenderer | null>(null)
   const audioCaptureRef = useRef<AudioCapture | null>(null)
   const audioPlaybackRef = useRef<AudioPlayback | null>(null)
   const testFrameCounter = useRef(0)
   const testFrameInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+  const roomParticipantsRef = useRef<Participant[]>([])
+
+  // ─── Helpers ───────────────────────────────────────────────────────
+  // Keep ref in sync for use inside media callbacks
+  if (room) roomParticipantsRef.current = room.participants
+
+  /** True when there are remote peers not on WebRTC (need WS media relay) */
+  function needsWsFallback(): boolean {
+    const remoteCount = roomParticipantsRef.current.filter((p) => p.id !== selfId).length
+    if (remoteCount === 0) return false
+    const webrtc = webrtcRef.current
+    return !webrtc || webrtc.connectedPeers.size < remoteCount
+  }
 
   // ─── ASCII renderer config (must match MeetingRoom tile inner size) ─────
   const chatWidthForVideo = chatVisible ? Math.floor(termW * 0.28) : 0
@@ -111,6 +127,8 @@ export function App({ initialRoomId }: AppProps) {
               participants: [...prev.participants, participant],
             }
           })
+          // Initiate WebRTC connection as existing participant (offerer)
+          webrtcRef.current?.handlePeerJoined(participant.id)
         },
         onParticipantLeft: (participantId) => {
           setRoom((prev) => {
@@ -125,6 +143,8 @@ export function App({ initialRoomId }: AppProps) {
             next.delete(participantId)
             return next
           })
+          // Tear down WebRTC connection
+          webrtcRef.current?.handlePeerLeft(participantId)
         },
         onParticipantUpdated: (participant) => {
           setRoom((prev) => {
@@ -141,6 +161,8 @@ export function App({ initialRoomId }: AppProps) {
           setChatMessages((prev) => [...prev, message])
         },
         onVideoFrame: (frame) => {
+          // Skip WebSocket video from peers with active WebRTC connections
+          if (webrtcRef.current?.isConnected(frame.senderId)) return
           // Decode raw RGB base64 and render locally with our terminal dimensions
           const renderer = rendererRef.current
           if (!renderer) {
@@ -170,11 +192,16 @@ export function App({ initialRoomId }: AppProps) {
           }
         },
         onAudioData: (senderId, data, timestamp) => {
+          // Skip WebSocket audio from peers with active WebRTC connections
+          if (webrtcRef.current?.isConnected(senderId)) return
           // Decode and play audio
           if (audioPlaybackRef.current?.isRunning()) {
             const buf = Buffer.from(data, "base64")
             audioPlaybackRef.current.write(buf)
           }
+        },
+        onWebRTCSignaling: (msg) => {
+          webrtcRef.current?.handleSignalingMessage(msg)
         },
         onError: (message) => setError(message),
       },
@@ -183,6 +210,37 @@ export function App({ initialRoomId }: AppProps) {
 
     client.connect()
     clientRef.current = client
+
+    // Initialize WebRTC manager for P2P DataChannel connections
+    const webrtc = new WebRTCManager(
+      (msg) => client.sendWebRTCSignaling(msg),
+      {
+        onAudioData: (senderId, pcmData) => {
+          if (audioPlaybackRef.current?.isRunning()) {
+            audioPlaybackRef.current.write(pcmData)
+          }
+        },
+        onVideoFrame: (senderId, width, height, rgbData) => {
+          const renderer = rendererRef.current
+          if (!renderer) return
+          try {
+            const rawFrame: RawFrame = { width, height, data: rgbData }
+            const ascii = renderer.renderColored(rawFrame)
+            setRemoteFrames((prev) => {
+              const next = new Map(prev)
+              next.set(senderId, ascii)
+              return next
+            })
+          } catch {
+            // Invalid frame
+          }
+        },
+        onPeersChanged: (peers) => {
+          setWebrtcPeers(new Set(peers))
+        },
+      },
+    )
+    webrtcRef.current = webrtc
 
     // Auto-join room if --room flag was provided
     if (initialRoomId) {
@@ -198,6 +256,7 @@ export function App({ initialRoomId }: AppProps) {
     }
 
     return () => {
+      webrtc.cleanup()
       client.disconnect()
     }
   }, [])
@@ -232,13 +291,23 @@ export function App({ initialRoomId }: AppProps) {
           const client = clientRef.current
           if (client) {
             const small = downsampleFrame(frame, 160, 120)
-            client.sendVideoFrame({
-              senderId: selfId,
-              width: small.width,
-              height: small.height,
-              data: small.data.toString("base64"),
-              timestamp: Date.now(),
-            })
+            // Send raw RGB via WebRTC DataChannels to connected peers
+            const webrtc = webrtcRef.current
+            if (webrtc) {
+              for (const peerId of webrtc.connectedPeers) {
+                webrtc.sendVideo(peerId, small.width, small.height, small.data)
+              }
+            }
+            // Send base64 via WebSocket only when needed (non-WebRTC peers)
+            if (needsWsFallback()) {
+              client.sendVideoFrame({
+                senderId: selfId,
+                width: small.width,
+                height: small.height,
+                data: small.data.toString("base64"),
+                timestamp: Date.now(),
+              })
+            }
           }
         })
 
@@ -264,14 +333,23 @@ export function App({ initialRoomId }: AppProps) {
         const ascii = rendererRef.current.renderColored(frame)
         setLocalFrame(ascii)
 
-        // Send raw RGB as base64
-        clientRef.current.sendVideoFrame({
-          senderId: selfId,
-          width: frame.width,
-          height: frame.height,
-          data: frame.data.toString("base64"),
-          timestamp: Date.now(),
-        })
+        // Send raw RGB via WebRTC DataChannels
+        const webrtc = webrtcRef.current
+        if (webrtc) {
+          for (const peerId of webrtc.connectedPeers) {
+            webrtc.sendVideo(peerId, frame.width, frame.height, frame.data)
+          }
+        }
+        // Send base64 via WebSocket only when needed (non-WebRTC peers)
+        if (needsWsFallback()) {
+          clientRef.current.sendVideoFrame({
+            senderId: selfId,
+            width: frame.width,
+            height: frame.height,
+            data: frame.data.toString("base64"),
+            timestamp: Date.now(),
+          })
+        }
       }, 1000 / FRAME_RATE)
     }
 
@@ -311,7 +389,17 @@ export function App({ initialRoomId }: AppProps) {
         // Start capture if not muted
         if (!isMuted) {
           const capture = new AudioCapture((data) => {
-            clientRef.current?.sendAudioData(data.toString("base64"), Date.now())
+            // Send raw PCM via WebRTC DataChannels to connected peers
+            const webrtc = webrtcRef.current
+            if (webrtc) {
+              for (const peerId of webrtc.connectedPeers) {
+                webrtc.sendAudio(peerId, data)
+              }
+            }
+            // Send base64 via WebSocket only when needed (non-WebRTC peers)
+            if (needsWsFallback()) {
+              clientRef.current?.sendAudioData(data.toString("base64"), Date.now())
+            }
           })
           await capture.start()
           if (capture.isRunning()) {
@@ -343,7 +431,15 @@ export function App({ initialRoomId }: AppProps) {
     } else if (!audioCaptureRef.current) {
       void (async () => {
         const capture = new AudioCapture((data) => {
-          clientRef.current?.sendAudioData(data.toString("base64"), Date.now())
+          const webrtc = webrtcRef.current
+          if (webrtc) {
+            for (const peerId of webrtc.connectedPeers) {
+              webrtc.sendAudio(peerId, data)
+            }
+          }
+          if (needsWsFallback()) {
+            clientRef.current?.sendAudioData(data.toString("base64"), Date.now())
+          }
         })
         await capture.start()
         if (capture.isRunning()) {
@@ -388,6 +484,7 @@ export function App({ initialRoomId }: AppProps) {
 
   const handleLeave = useCallback(() => {
     clientRef.current?.leaveRoom()
+    webrtcRef.current?.cleanup()
     cameraRef.current?.stop()
     audioCaptureRef.current?.stop()
     audioPlaybackRef.current?.stop()
@@ -401,10 +498,12 @@ export function App({ initialRoomId }: AppProps) {
     setIsCameraOn(true)
     setPinnedParticipantId(null)
     setChatVisible(false)
+    setWebrtcPeers(new Set())
   }, [])
 
   /** End process: disconnect WS (stops reconnect loop), release media, tear down OpenTUI. */
   const handleQuitApp = useCallback(() => {
+    webrtcRef.current?.cleanup()
     clientRef.current?.disconnect()
     cameraRef.current?.stop()
     audioCaptureRef.current?.stop()
@@ -453,6 +552,7 @@ export function App({ initialRoomId }: AppProps) {
       onToggleChat={() => setChatVisible((v) => !v)}
       pinnedParticipantId={pinnedParticipantId}
       onPinnedChange={setPinnedParticipantId}
+      webrtcPeers={webrtcPeers}
     />
   )
 }

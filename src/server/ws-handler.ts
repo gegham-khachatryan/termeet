@@ -22,6 +22,16 @@ function broadcast(roomId: string, message: ServerMessage, excludeWs?: ServerWeb
   }
 }
 
+function sendToParticipant(roomId: string, participantId: string, message: ServerMessage) {
+  const payload = JSON.stringify(message)
+  for (const [ws, state] of clients) {
+    if (state.roomId === roomId && state.participantId === participantId && ws.readyState === 1) {
+      ws.send(payload)
+      return
+    }
+  }
+}
+
 function send(ws: ServerWebSocket<ClientState>, message: ServerMessage) {
   if (ws.readyState === 1) {
     ws.send(JSON.stringify(message))
@@ -153,6 +163,38 @@ export function handleMessage(ws: ServerWebSocket<ClientState>, raw: string | Bu
       if (updated) {
         broadcast(state.roomId, { type: "participant-updated", participant: updated })
       }
+      break
+    }
+
+    case "webrtc-offer": {
+      if (!state.roomId || !state.participantId) return
+      sendToParticipant(state.roomId, msg.targetId, {
+        type: "webrtc-offer",
+        senderId: state.participantId,
+        sdp: msg.sdp,
+      })
+      break
+    }
+
+    case "webrtc-answer": {
+      if (!state.roomId || !state.participantId) return
+      sendToParticipant(state.roomId, msg.targetId, {
+        type: "webrtc-answer",
+        senderId: state.participantId,
+        sdp: msg.sdp,
+      })
+      break
+    }
+
+    case "webrtc-ice-candidate": {
+      if (!state.roomId || !state.participantId) return
+      sendToParticipant(state.roomId, msg.targetId, {
+        type: "webrtc-ice-candidate",
+        senderId: state.participantId,
+        candidate: msg.candidate,
+        sdpMLineIndex: msg.sdpMLineIndex,
+        sdpMid: msg.sdpMid,
+      })
       break
     }
 

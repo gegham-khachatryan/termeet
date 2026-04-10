@@ -10,6 +10,7 @@ interface ControlsBarProps {
   chatVisible: boolean
   roomId: string
   participantCount: number
+  webrtcPeerCount: number
   elapsed: string
 }
 
@@ -48,6 +49,7 @@ export function ControlsBar({
   chatVisible,
   roomId,
   participantCount,
+  webrtcPeerCount,
   elapsed,
 }: ControlsBarProps) {
   return (
@@ -76,9 +78,14 @@ export function ControlsBar({
             <text fg="#555555">click</text>
           )}
         </box>
-        <text fg="#888888">
-          {`${participantCount} participant${participantCount !== 1 ? "s" : ""}`}
-        </text>
+        <box flexDirection="row" gap={1}>
+          <text fg="#888888">
+            {`${participantCount} participant${participantCount !== 1 ? "s" : ""}`}
+          </text>
+          {webrtcPeerCount > 0 && (
+            <text fg="#4ecdc4">{`(${webrtcPeerCount} p2p)`}</text>
+          )}
+        </box>
         <text fg="#666666">{elapsed}</text>
       </box>
 

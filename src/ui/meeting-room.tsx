@@ -27,6 +27,7 @@ interface MeetingRoomProps {
   onToggleChat: () => void
   pinnedParticipantId: string | null
   onPinnedChange: (id: string | null) => void
+  webrtcPeers: Set<string>
 }
 
 export function MeetingRoom({
@@ -45,7 +46,8 @@ export function MeetingRoom({
   chatVisible,
   onToggleChat,
   pinnedParticipantId,
-  onPinnedChange
+  onPinnedChange,
+  webrtcPeers
 }: MeetingRoomProps) {
   const [chatFocused, setChatFocused] = useState(false)
   const [elapsed, setElapsed] = useState('00:00')
@@ -157,6 +159,7 @@ export function MeetingRoom({
   const renderPanel = (p: Participant, w: number, h: number, pinFlag: boolean) => {
     const isSelf = p.id === selfId
     const frame = isSelf ? localFrame : (remoteFrames.get(p.id) ?? null)
+    const connType = isSelf ? null : webrtcPeers.has(p.id) ? 'p2p' as const : 'relay' as const
     return (
       <VideoPanel
         key={p.id}
@@ -166,6 +169,7 @@ export function MeetingRoom({
         isCameraOn={p.isCameraOn}
         isSelf={isSelf}
         isPinned={pinFlag}
+        connType={connType}
         width={w}
         height={h}
         onPin={() => handlePin(p.id)}
@@ -251,6 +255,7 @@ export function MeetingRoom({
         chatVisible={chatVisible}
         roomId={room.id}
         participantCount={room.participants.length}
+        webrtcPeerCount={webrtcPeers.size}
         elapsed={elapsed}
       />
     </box>

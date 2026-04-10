@@ -54,6 +54,9 @@ export type ClientMessage =
   | { type: "audio-data"; data: string; timestamp: number }
   | { type: "toggle-mute"; isMuted: boolean }
   | { type: "toggle-camera"; isCameraOn: boolean }
+  | { type: "webrtc-offer"; targetId: string; sdp: string }
+  | { type: "webrtc-answer"; targetId: string; sdp: string }
+  | { type: "webrtc-ice-candidate"; targetId: string; candidate: string; sdpMLineIndex: number | null; sdpMid: string | null }
   | { type: "ping" }
 
 // Server → Client
@@ -67,5 +70,8 @@ export type ServerMessage =
   | { type: "chat-message"; message: ChatMessage }
   | { type: "video-frame"; frame: AsciiFrame }
   | { type: "audio-data"; senderId: string; data: string; timestamp: number }
+  | { type: "webrtc-offer"; senderId: string; sdp: string }
+  | { type: "webrtc-answer"; senderId: string; sdp: string }
+  | { type: "webrtc-ice-candidate"; senderId: string; candidate: string; sdpMLineIndex: number | null; sdpMid: string | null }
   | { type: "error"; message: string }
   | { type: "pong" }
