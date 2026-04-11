@@ -102,7 +102,12 @@ const TARGETS: Target[] = [
 ]
 
 const single = process.argv.includes("--single")
-const targets = single
+const envTargets = process.env["TERMEET_TARGETS"]
+  ?.split(",")
+  .map((s) => s.trim())
+  .filter(Boolean)
+
+let targets = single
   ? TARGETS.filter(
       (t) =>
         t.npmOs ===
@@ -113,6 +118,11 @@ const targets = single
               : "linux") && t.npmCpu === process.arch,
     )
   : TARGETS
+
+if (envTargets && envTargets.length > 0) {
+  const wanted = new Set(envTargets)
+  targets = targets.filter((t) => wanted.has(t.slug))
+}
 
 if (targets.length === 0) {
   console.error("No matching target for --single (platform/arch).")

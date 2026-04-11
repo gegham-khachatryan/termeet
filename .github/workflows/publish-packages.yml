@@ -88,8 +88,8 @@ jobs:
           fi
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-  build-cli:
-    name: Build CLI
+  build-cli-linux-windows:
+    name: Build CLI (Linux/Windows)
     needs: version
     runs-on: ubuntu-latest
     steps:
@@ -103,27 +103,48 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Install rcodesign (ad-hoc codesign for macOS binaries)
-        run: |
-          set -euo pipefail
-          RCODESIGN_VERSION="0.27.0"
-          curl -fsSL "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F${RCODESIGN_VERSION}/apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
-            | tar xz --strip-components=1 -C /usr/local/bin "apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl/rcodesign"
-          rcodesign --version
-
-      - name: Build all platform binaries
+      - name: Build Linux/Windows binaries
         run: bun run build:cli:all
+        env:
+          TERMEET_TARGETS: linux-x64,linux-arm64,windows-x64,windows-arm64
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: cli-binaries
+          name: cli-binaries-linux-windows
+          path: dist/
+          retention-days: 1
+
+  build-cli-darwin:
+    name: Build CLI (Darwin)
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build macOS binaries
+        run: bun run build:cli:all
+        env:
+          TERMEET_TARGETS: darwin-arm64,darwin-x64
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-binaries-darwin
           path: dist/
           retention-days: 1
 
   publish:
     name: Publish
-    needs: [version, build-cli]
+    needs: [version, build-cli-linux-windows, build-cli-darwin]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -144,10 +165,16 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Download CLI binaries
+      - name: Download Linux/Windows binaries
         uses: actions/download-artifact@v4
         with:
-          name: cli-binaries
+          name: cli-binaries-linux-windows
+          path: dist
+
+      - name: Download Darwin binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-binaries-darwin
           path: dist
 
       - name: Publish platform packages + wrapper
