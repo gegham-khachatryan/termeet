@@ -1,5 +1,5 @@
 # Same flow as multiplayer-debugger-javascript/.github/workflows/publish-packages.yml:
-# lint → version bump (from tag) → build all CLI targets on Ubuntu → publish npm packages.
+# lint → version bump (from tag) → build per-platform CLI binaries → publish npm packages.
 
 name: Publish Packages
 
@@ -118,7 +118,7 @@ jobs:
   build-cli-darwin:
     name: Build CLI (Darwin)
     needs: version
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
         with:
@@ -134,6 +134,7 @@ jobs:
         run: bun run build:cli:all
         env:
           TERMEET_TARGETS: darwin-arm64,darwin-x64
+          TERMEET_REQUIRE_DARWIN_SIGNATURE: "true"
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

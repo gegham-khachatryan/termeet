@@ -129,6 +129,10 @@ if (targets.length === 0) {
   process.exit(1)
 }
 
+const requireDarwinSignature = /^(1|true|yes)$/i.test(
+  process.env["TERMEET_REQUIRE_DARWIN_SIGNATURE"] ?? "",
+)
+
 async function downloadFfmpeg(ffPlat: string, ffArch: string, destPath: string): Promise<boolean> {
   const base = `https://github.com/eugeneware/ffmpeg-static/releases/download/${FFMPEG_RELEASE}`
   const url = `${base}/ffmpeg-${ffPlat}-${ffArch}.gz`
@@ -175,7 +179,15 @@ function copyFfplayFromPath(binDir: string, win: boolean) {
  * Tries `codesign` (macOS) first, then `ldid` (cross-platform), then
  * `rcodesign` (Rust-based cross-platform signer).
  */
-async function adHocSign(binPath: string, slug: string) {
+function hasValidDarwinSignature(binPath: string): boolean {
+  const verify = Bun.spawnSync(["codesign", "--verify", "--verbose=2", binPath], {
+    stdout: "ignore",
+    stderr: "ignore",
+  })
+  return verify.exitCode === 0
+}
+
+async function adHocSign(binPath: string, slug: string): Promise<boolean> {
   const tools = [
     { cmd: ["codesign", "--sign", "-", "--force", binPath], name: "codesign" },
     { cmd: ["ldid", "-S", binPath], name: "ldid" },
@@ -186,10 +198,17 @@ async function adHocSign(binPath: string, slug: string) {
     if (which.exitCode !== 0) continue
     console.log(`  → ad-hoc signing (${name}) ${slug}`)
     const result = Bun.spawnSync(cmd, { stdout: "inherit", stderr: "inherit" })
-    if (result.exitCode === 0) return
+    if (result.exitCode === 0) {
+      if (name === "codesign" && hasValidDarwinSignature(binPath)) return true
+      if (name !== "codesign") {
+        const check = Bun.spawnSync(["codesign", "-dv", binPath], { stdout: "ignore", stderr: "ignore" })
+        if (check.exitCode === 0) return true
+      }
+    }
     console.warn(`  ⚠ ${name} returned ${result.exitCode}`)
   }
   console.warn(`  ⚠ no signing tool available for ${slug} — macOS may block this binary`)
+  return false
 }
 
 const distRoot = join(ROOT, "dist")
@@ -236,10 +255,15 @@ for (const t of targets) {
 
   // Ad-hoc codesign macOS binaries so Gatekeeper doesn't SIGKILL them
   if (t.npmOs === "darwin") {
+    let signed = false
     try {
-      await adHocSign(binPath, t.slug)
+      signed = await adHocSign(binPath, t.slug)
     } catch (e) {
       console.warn(`  ⚠ signing failed for ${t.slug}: ${e}`)
+    }
+    if (!signed && requireDarwinSignature) {
+      console.error(`  ✖ required Darwin signature missing for ${t.slug}`)
+      process.exit(1)
     }
   }
 
