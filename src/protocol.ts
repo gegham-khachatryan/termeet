@@ -66,6 +66,12 @@ export type ServerMessage =
   | { type: 'error'; message: string }
   | { type: 'pong' }
 
+// ─── Version ───────────────────────────────────────────────────────────────
+
+// @ts-ignore — Bun resolves JSON imports natively
+import pkg from "../package.json" with { type: "json" }
+export const VERSION: string = pkg.version
+
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 export const DEFAULT_SERVER_PORT = 3483

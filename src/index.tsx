@@ -1,7 +1,7 @@
 import { createCliRenderer } from "@opentui/core"
 import { createRoot } from "@opentui/react"
 import { App } from "./app.tsx"
-import { DEFAULT_SERVER_PORT, DEFAULT_CLI_WEBSOCKET_URL } from "./protocol.ts"
+import { DEFAULT_SERVER_PORT, DEFAULT_CLI_WEBSOCKET_URL, VERSION } from "./protocol.ts"
 
 // ─── CLI Argument Parsing ────────────────────────────────────────────────────
 
@@ -16,6 +16,7 @@ function printHelp() {
   Usage:
     termeet                    Launch the client (connects to a signaling server)
     termeet --room <id>        Join a room immediately
+    termeet --version          Show version
     termeet --help             Show this help message
 
   Environment Variables:
@@ -41,6 +42,11 @@ function printHelp() {
 
 async function main() {
   const args = process.argv.slice(2)
+
+  if (args.includes("--version") || args.includes("-v")) {
+    console.log(`termeet ${VERSION}`)
+    process.exit(0)
+  }
 
   if (args.includes("--help") || args.includes("-h")) {
     printHelp()

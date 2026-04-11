@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useKeyboard, useTerminalDimensions } from '@opentui/react'
 import { inputChrome } from './input-chrome.ts'
 import { getSavedUserName, saveUserName } from '../lib/config.ts'
+import { VERSION } from '../protocol.ts'
 
 interface LobbyProps {
   onCreateRoom: (roomName: string, userName: string) => void
@@ -177,6 +178,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onQuit, connectionState, error
                 <b>Video conferencing in your terminal</b>
               </text>
               <text fg='#99aabb'>ASCII cameras · real-time chat · room codes</text>
+              <text fg='#556677'>v{VERSION}</text>
             </box>
 
             <text fg='#445566' marginTop={1} alignSelf='center'>

@@ -14,6 +14,8 @@ const STATUS_LABELS: Record<ConnectionState, string> = {
   disconnected: '\u25cf Disconnected'
 }
 
+declare const __APP_VERSION__: string
+
 const GITHUB_REPO = 'https://github.com/gegham-khachatryan/termeet'
 
 export function Lobby({ connState, error, onCreateRoom, onJoinRoom }: LobbyProps) {
@@ -45,6 +47,7 @@ export function Lobby({ connState, error, onCreateRoom, onJoinRoom }: LobbyProps
         <p className='tagline'>
           <strong className='tagline-lead'>Video conferencing in your terminal</strong>
           <span className='tagline-sub'>ASCII cameras · real-time chat · room codes</span>
+          <span className='tagline-version'>v{__APP_VERSION__}</span>
         </p>
 
         <div className='lobby-rule' aria-hidden>
