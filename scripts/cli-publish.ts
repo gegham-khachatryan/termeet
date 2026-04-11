@@ -61,8 +61,11 @@ function npmPublish(pkgDir: string, label: string, ignoreScripts: boolean) {
 
 async function verifyTarballAvailable(pkgName: string, version: string) {
   const spec = `${pkgName}@${version}`
+  const maxAttempts = 24
+  const initialDelayMs = 3000
+  const maxDelayMs = 15000
 
-  for (let attempt = 1; attempt <= 10; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const view = Bun.spawnSync(["npm", "view", spec, "dist.tarball", "--json"], {
       cwd: ROOT,
       env: process.env,
@@ -74,19 +77,23 @@ async function verifyTarballAvailable(pkgName: string, version: string) {
       const tarball = view.stdout.toString().trim().replace(/^"|"$/g, "")
       if (tarball) {
         try {
-          const res = await fetch(tarball, { method: "HEAD" })
-          if (res.ok) {
+          const res = await fetch(tarball, {
+            method: "GET",
+            headers: { Range: "bytes=0-0" },
+          })
+          if (res.ok || res.status === 206) {
             console.log(`Verified ${spec} tarball`)
             return
           }
-          console.log(`Waiting for ${spec} tarball (${res.status}), attempt ${attempt}/10`)
+          console.log(`Waiting for ${spec} tarball (${res.status}), attempt ${attempt}/${maxAttempts}`)
         } catch {
-          console.log(`Waiting for ${spec} tarball (network), attempt ${attempt}/10`)
+          console.log(`Waiting for ${spec} tarball (network), attempt ${attempt}/${maxAttempts}`)
         }
       }
     }
 
-    await Bun.sleep(3000)
+    const delay = Math.min(maxDelayMs, initialDelayMs * attempt)
+    await Bun.sleep(delay)
   }
 
   console.error(`Tarball not available after publish: ${spec}`)
