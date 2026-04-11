@@ -100,6 +100,13 @@ export class RoomManager {
     return participant
   }
 
+  getParticipant(participantId: string): Participant | undefined {
+    const roomId = this.participantRooms.get(participantId)
+    if (!roomId) return undefined
+    const room = this.rooms.get(roomId)
+    return room?.participants.find((p) => p.id === participantId)
+  }
+
   getRoomForParticipant(participantId: string): Room | undefined {
     const roomId = this.participantRooms.get(participantId)
     if (!roomId) return undefined

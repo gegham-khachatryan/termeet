@@ -135,6 +135,9 @@ export function handleMessage(ws: ServerWebSocket<ClientState>, raw: string | Bu
 
     case "audio-data": {
       if (!state.roomId || !state.participantId) return
+      // Don't relay audio from muted participants
+      const participant = roomManager.getParticipant(state.participantId)
+      if (participant?.isMuted) break
       broadcast(
         state.roomId,
         {

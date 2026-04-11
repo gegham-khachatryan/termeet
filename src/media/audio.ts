@@ -81,7 +81,7 @@ export class AudioCapture {
 
         buffer = Buffer.concat([buffer, Buffer.from(value)])
 
-        while (buffer.length >= chunkSize) {
+        while (this.running && buffer.length >= chunkSize) {
           const chunk = buffer.subarray(0, chunkSize)
           buffer = buffer.subarray(chunkSize)
           this.onData(Buffer.from(chunk))

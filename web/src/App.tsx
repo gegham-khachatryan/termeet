@@ -317,7 +317,7 @@ function AppShell() {
   const handleToggleMic = useCallback(() => {
     setMicOn((prev) => {
       const next = !prev
-      send({ type: "toggle-mute", isMuted: next })
+      send({ type: "toggle-mute", isMuted: !next })
       return next
     })
   }, [send])
