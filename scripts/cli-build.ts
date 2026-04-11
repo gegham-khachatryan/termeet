@@ -188,58 +188,41 @@ function hasValidDarwinSignature(binPath: string): boolean {
 }
 
 async function adHocSign(binPath: string, slug: string): Promise<boolean> {
-  // Bun may already ad-hoc sign compiled binaries — skip if valid
+  // Bun ≥1.1 already ad-hoc signs compiled binaries on macOS — skip if valid
   if (hasValidDarwinSignature(binPath)) {
     console.log(`  → binary already has valid signature for ${slug}`)
     return true
   }
 
-  // Log binary format for CI debugging
-  const fileInfo = Bun.spawnSync(["file", binPath], { stdout: "pipe", stderr: "ignore" })
-  if (fileInfo.exitCode === 0) console.log(`  → ${fileInfo.stdout.toString().trim()}`)
-
-  // Try codesign first (available on all macOS runners)
-  const hasCodesign =
-    Bun.spawnSync(["which", "codesign"], { stdout: "pipe", stderr: "ignore" }).exitCode === 0
-
-  if (hasCodesign) {
-    // Attempt 1: direct sign
-    console.log(`  → ad-hoc signing (codesign) ${slug}`)
-    let result = Bun.spawnSync(["codesign", "--sign", "-", "--force", binPath], {
-      stdout: "inherit",
-      stderr: "inherit",
-    })
-    if (result.exitCode === 0 && hasValidDarwinSignature(binPath)) return true
-
-    // Attempt 2: strip any malformed existing signature, then retry
-    console.log(`  → stripping existing signature and retrying…`)
-    Bun.spawnSync(["codesign", "--remove-signature", binPath], {
-      stdout: "ignore",
-      stderr: "ignore",
-    })
-    result = Bun.spawnSync(["codesign", "--sign", "-", "--force", binPath], {
-      stdout: "inherit",
-      stderr: "inherit",
-    })
-    if (result.exitCode === 0 && hasValidDarwinSignature(binPath)) return true
-    console.warn(`  ⚠ codesign failed after retry (exit ${result.exitCode})`)
-  }
-
-  // Fallback: rcodesign / ldid if available
-  const fallbacks = [
-    { cmd: ["rcodesign", "sign", binPath], name: "rcodesign" },
+  const tools = [
+    { cmd: ["codesign", "--sign", "-", "--force", binPath], name: "codesign" },
     { cmd: ["ldid", "-S", binPath], name: "ldid" },
+    { cmd: ["rcodesign", "sign", binPath], name: "rcodesign" },
   ]
-  for (const { cmd, name } of fallbacks) {
+  for (const { cmd, name } of tools) {
     const which = Bun.spawnSync(["which", cmd[0]], { stdout: "pipe", stderr: "ignore" })
     if (which.exitCode !== 0) continue
+
+    // Strip any existing (possibly invalid) signature before re-signing
+    if (name === "codesign") {
+      Bun.spawnSync(["codesign", "--remove-signature", binPath], {
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+    }
+
     console.log(`  → ad-hoc signing (${name}) ${slug}`)
     const result = Bun.spawnSync(cmd, { stdout: "inherit", stderr: "inherit" })
-    if (result.exitCode === 0 && hasValidDarwinSignature(binPath)) return true
+    if (result.exitCode === 0) {
+      if (name === "codesign" && hasValidDarwinSignature(binPath)) return true
+      if (name !== "codesign") {
+        const check = Bun.spawnSync(["codesign", "-dv", binPath], { stdout: "ignore", stderr: "ignore" })
+        if (check.exitCode === 0) return true
+      }
+    }
     console.warn(`  ⚠ ${name} returned ${result.exitCode}`)
   }
-
-  console.warn(`  ⚠ no signing tool succeeded for ${slug}`)
+  console.warn(`  ⚠ no signing tool available for ${slug} — macOS may block this binary`)
   return false
 }
 
