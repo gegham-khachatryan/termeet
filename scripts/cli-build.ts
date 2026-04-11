@@ -188,6 +188,12 @@ function hasValidDarwinSignature(binPath: string): boolean {
 }
 
 async function adHocSign(binPath: string, slug: string): Promise<boolean> {
+  // Bun ≥1.1 already ad-hoc signs compiled binaries on macOS — skip if valid
+  if (hasValidDarwinSignature(binPath)) {
+    console.log(`  → binary already has valid signature for ${slug}`)
+    return true
+  }
+
   const tools = [
     { cmd: ["codesign", "--sign", "-", "--force", binPath], name: "codesign" },
     { cmd: ["ldid", "-S", binPath], name: "ldid" },
@@ -196,6 +202,15 @@ async function adHocSign(binPath: string, slug: string): Promise<boolean> {
   for (const { cmd, name } of tools) {
     const which = Bun.spawnSync(["which", cmd[0]], { stdout: "pipe", stderr: "ignore" })
     if (which.exitCode !== 0) continue
+
+    // Strip any existing (possibly invalid) signature before re-signing
+    if (name === "codesign") {
+      Bun.spawnSync(["codesign", "--remove-signature", binPath], {
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+    }
+
     console.log(`  → ad-hoc signing (${name}) ${slug}`)
     const result = Bun.spawnSync(cmd, { stdout: "inherit", stderr: "inherit" })
     if (result.exitCode === 0) {
