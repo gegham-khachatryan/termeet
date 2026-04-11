@@ -103,6 +103,13 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - name: Install rcodesign (ad-hoc codesign for macOS binaries)
+        run: |
+          RCODESIGN_VERSION="0.27.0"
+          curl -sL "https://github.com/indygreg/apple-codesign/releases/download/apple-codesign%2F${RCODESIGN_VERSION}/apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin "apple-codesign-${RCODESIGN_VERSION}-x86_64-unknown-linux-musl/rcodesign"
+          rcodesign --version
+
       - name: Build all platform binaries
         run: bun run build:cli:all
 

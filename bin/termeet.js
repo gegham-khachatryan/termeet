@@ -57,4 +57,12 @@ if (!bin) {
   process.exit(1)
 }
 
-execFileSync(bin, process.argv.slice(2), { stdio: "inherit" })
+try {
+  execFileSync(bin, process.argv.slice(2), { stdio: "inherit" })
+} catch (err) {
+  if (err.signal) {
+    // Re-raise the same signal so the parent sees the correct exit reason
+    process.kill(process.pid, err.signal)
+  }
+  process.exit(err.status ?? 1)
+}

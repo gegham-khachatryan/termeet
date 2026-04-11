@@ -160,6 +160,28 @@ function copyFfplayFromPath(binDir: string, win: boolean) {
   }
 }
 
+/**
+ * Ad-hoc codesign a Mach-O binary so macOS Gatekeeper won't SIGKILL it.
+ * Tries `codesign` (macOS) first, then `ldid` (cross-platform), then
+ * `rcodesign` (Rust-based cross-platform signer).
+ */
+async function adHocSign(binPath: string, slug: string) {
+  const tools = [
+    { cmd: ["codesign", "--sign", "-", "--force", binPath], name: "codesign" },
+    { cmd: ["ldid", "-S", binPath], name: "ldid" },
+    { cmd: ["rcodesign", "sign", binPath], name: "rcodesign" },
+  ]
+  for (const { cmd, name } of tools) {
+    const which = Bun.spawnSync(["which", cmd[0]], { stdout: "pipe", stderr: "ignore" })
+    if (which.exitCode !== 0) continue
+    console.log(`  → ad-hoc signing (${name}) ${slug}`)
+    const result = Bun.spawnSync(cmd, { stdout: "inherit", stderr: "inherit" })
+    if (result.exitCode === 0) return
+    console.warn(`  ⚠ ${name} returned ${result.exitCode}`)
+  }
+  console.warn(`  ⚠ no signing tool available for ${slug} — macOS may block this binary`)
+}
+
 const distRoot = join(ROOT, "dist")
 mkdirSync(distRoot, { recursive: true })
 
@@ -201,6 +223,15 @@ for (const t of targets) {
   }
 
   if (t.npmOs !== "win32") chmodSync(binPath, 0o755)
+
+  // Ad-hoc codesign macOS binaries so Gatekeeper doesn't SIGKILL them
+  if (t.npmOs === "darwin") {
+    try {
+      await adHocSign(binPath, t.slug)
+    } catch (e) {
+      console.warn(`  ⚠ signing failed for ${t.slug}: ${e}`)
+    }
+  }
 
   const ffName = t.npmOs === "win32" ? "ffmpeg.exe" : "ffmpeg"
   const ffDest = join(binDir, ffName)
