@@ -1,6 +1,6 @@
 {
   "name": "termeet",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Termeet - Video conferencing with ASCII art",
   "module": "src/index.tsx",
   "type": "module",
@@ -21,12 +21,12 @@
     "bin"
   ],
   "optionalDependencies": {
-    "termeet-cli-darwin-arm64": "0.1.13",
-    "termeet-cli-darwin-x64": "0.1.13",
-    "termeet-cli-linux-arm64": "0.1.13",
-    "termeet-cli-linux-x64": "0.1.13",
-    "termeet-cli-windows-arm64": "0.1.13",
-    "termeet-cli-windows-x64": "0.1.13"
+    "termeet-cli-darwin-arm64": "0.1.14",
+    "termeet-cli-darwin-x64": "0.1.14",
+    "termeet-cli-linux-arm64": "0.1.14",
+    "termeet-cli-linux-x64": "0.1.14",
+    "termeet-cli-windows-arm64": "0.1.14",
+    "termeet-cli-windows-x64": "0.1.14"
   },
   "repository": {
     "type": "git",
