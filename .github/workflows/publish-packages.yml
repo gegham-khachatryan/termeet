@@ -14,7 +14,7 @@ on:
         required: true
 
 env:
-  BUN_VERSION: latest
+  BUN_VERSION: "1.2.12"
 
 jobs:
   lint:
